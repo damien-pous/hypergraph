@@ -1,0 +1,9 @@
+(test
+ (name sanity)
+ (modules sanity)
+ (libraries hypergraphs))
+
+(test
+ (name geo)
+ (modules geo)
+ (libraries hypergraphs cairo2-gtk vg.cairo))
