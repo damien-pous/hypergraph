@@ -1,6 +1,34 @@
 open Gg
 open Vg
+open Types
 open Misc
+
+class nopic: picture =
+  object
+    method clear = ()
+    method get = I.void
+    method blend _ = ()
+    method path ?color _ = ignore color 
+    method surface ?color _ = ignore color 
+    method circle ?color _ = ignore color 
+    method disc ?color _ = ignore color 
+    method point ?color _ = ignore color 
+    method segment ?color _ _ = ignore color 
+    method line ?color _ = ignore color 
+    method text _ _ = ()
+  end
+let nopic = new nopic
+let debug = ref nopic
+let set_debug pic = debug := pic
+let unset_debug () = debug := nopic
+
+
+(* directed lines *)
+let line' x d = { point=x; dir=V2.unit d }
+let line x y = line' x (V2.sub y x)
+
+(* circles *)
+let circle center radius = { center; radius }
 
 (** random point in [-s;s]x[-s;s] *)
 let random2 s =
@@ -38,11 +66,6 @@ let angle u v =
   let a = acos ((V2.dot u v) /. (V2.norm u *. V2.norm v)) in
   if V2.dot u (V2.ortho v) >= 0. then -.a else a
 
-(* directed lines *)
-type line = { point: p2; dir: v2 }
-let line' x d = { point=x; dir=V2.unit d }
-let line x y = line' x (V2.sub y x)
-
 (** (signed) distance between p and directed line xy *)
 let line_dist l p =  V2.dot (V2.ortho l.dir) (V2.sub p l.point)
 
@@ -55,12 +78,11 @@ let side l p =
   if V2.dot (V2.ortho l.dir) (V2.sub p l.point) >= 0. then L else R
 
 (** intersection of two lines *)
-let line_inter l l' =
-  let s = V2.dot l.dir (V2.ortho l'.dir) /. V2.dot l.dir l'.dir in
-  V2.add l.point (V2.smul s l.dir)
+let line_inter x y =
+  let dx,dy' = x.dir, V2.ortho y.dir in
+  let s = V2.dot (V2.sub y.point x.point) dy' /. V2.dot dx dy' in
+  V2.add x.point (V2.smul s dx)
 
-type circle = { center: p2; radius: float }
-let circle center radius = { center; radius }
 
 
 (** find the lines through x tangent to circle c, return the left or right tangent points *)
@@ -74,12 +96,15 @@ let tangent_point x c o =
 
 (** point of the circle c bissecting xcy *)
 let bisect_point x y c =
-  let cx = V2.sub x c.center in
-  let cy = V2.sub y c.center in
-  let a = angle cx cy /. 2. in
-  let a = match side (line x y) c.center with L -> a | R -> -.a in
-  let d = V2.smul c.radius (V2.ltr (M2.rot2 a) (V2.unit cx)) in
-  V2.add c.center d, d
+  let m = mid3 x y c.center in
+  let d = V2.sub m c.center in
+  V2.add c.center (V2.smul (c.radius/.V2.norm d) d), d  
+  (* let cx = V2.sub x c.center in *)
+  (* let cy = V2.sub y c.center in *)
+  (* let a = angle cx cy /. 2. in *)
+  (* let a = match side (line x y) c.center with L -> a | R -> -.a in *)
+  (* let d = V2.smul c.radius (V2.ltr (M2.rot2 a) (V2.unit cx)) in *)
+  (* V2.add c.center d, d *)
 
 (** returns the control point between x and y such that
     the corresponding quadratic Bezier curve visits z at time 0.5 *)
@@ -157,16 +182,42 @@ let classify c x y =
   let d = line_dist (line x y) c.center in
   if d > c.radius then `L
   else if d < -. c.radius then `R
-  else `C
+  else
+    let dxy = dist x y in
+    let e = V2.dot (V2.sub c.center x) (V2.sub y x) /. dxy in
+    if 0. < e && e < dxy && c.radius < min (dist x c.center) (dist y c.center) then `C else `N
 
-let xcurve c ?(lx=false) ?(ly=false) x y =
+let xcurve  c ?(lx=false) ?(ly=false) x y =
   match
     match classify c x y with
-    | `L ->
+    | `N -> `N
+    | `R when false && (lx || ly) -> `C
+    | `R when (lx || ly) ->
+       let b,d = bisect_point x y c in
+       let tx,_ = tangent_point x c R in
+       let ty,_ = tangent_point y c L in
+       let l = line' b (V2.ortho d) in
+       let cx = line_inter l (line x (if lx then c.center else tx)) in
+       let cy = line_inter l (line y (if ly then c.center else ty)) in
+       !debug#segment cx cy;
+       !debug#point cx;
+       !debug#point cy;
+       let b = P2.mid cx cy in
+       `B(cx,b,cy)
+    | l when true ->
+       let tx,dx = tangent_point x c L in
+       let ty,dy = tangent_point y c R in
+       !debug#segment x tx;
+       !debug#segment y ty;
        let m = mid3 x y c.center in
-       `D (V2.sub c.center m)
-    | `R when lx || ly ->
-       `C
+       !debug#line (line m c.center);
+       let d = V2.add dx dy in
+       if V2.norm2 d > 0.5 then `D d
+       else if false then `T (tx,angle dx dy,ty)
+       else
+         let _ = !debug#point ~color:Color.blue m in
+         if l<>`R then `D (V2.sub c.center m) else `D (V2.sub m c.center) 
+         
     | _ ->
        (* let m = P2.mid x y in *)
        (* V2.add (V2.sub c m) (V2.ortho (V2.sub y x)) *)
@@ -174,7 +225,7 @@ let xcurve c ?(lx=false) ?(ly=false) x y =
        let u = V2.unit xy' in
        let ru = V2.smul c.radius u in
        let ax,ay = angle u (V2.sub x c.center), angle u (V2.sub y c.center) in
-       let a = 
+       let a =
          minimize ay ax
            (fun a ->
              let ru = V2.ltr (M2.rot2 a) ru in
@@ -183,13 +234,28 @@ let xcurve c ?(lx=false) ?(ly=false) x y =
              | None -> Float.infinity)
        in `D (V2.ltr (M2.rot2 a) ru)
   with
-  | `C -> P.qcurve c.center y
-  | `D d -> 
-     let ru = V2.smul c.radius (V2.unit d) in
-     match qcurve_control_ortho x y (V2.add c.center ru) ru with
-     | Some p -> P.qcurve p y
-     | None -> fun x -> x
-let curve c ?lx ?ly x y = start x |> xcurve c ?lx ?ly x y
+    | `N -> fun x -> x
+    | `C -> !debug#point ~color:Constants.gray c.center; P.qcurve c.center y
+    | `T(tx,angle,ty) ->
+       !debug#point ~color:Constants.gray tx; 
+       !debug#point ~color:Constants.gray ty; 
+       fun p -> 
+       P.line tx p |> P.earc ~cw:true ~angle (Size2.v c.radius c.radius) ty |> P.line y
+    | `B(cx,b,cy) ->
+       !debug#point ~color:Constants.gray cx; 
+       !debug#point ~color:Constants.gray cy; 
+       (* fun p -> P.line cx p |> P.line b |> P.line cy |> P.line y *)
+       fun p -> P.qcurve cx b p |> P.qcurve cy y
+    | `D d -> 
+       let ru = V2.smul c.radius (V2.unit d) in
+       !debug#point ~color:Constants.gray (V2.add c.center ru); 
+       match qcurve_control_ortho x y (V2.add c.center ru) ru with
+       | Some p ->
+          !debug#point ~color:Constants.gray p; 
+          P.qcurve p y
+       | None -> fun x -> x
+let curve c ?lx ?ly x y =
+  start x |> xcurve c ?lx ?ly x y
 
 let edge1 c x =
   let xc = V2.sub c.center x in
@@ -211,7 +277,7 @@ let edge3 c x y z =
   let ok p = dist c.center p > c.radius && dist c.center m < dist p m in
   let cycle x y z = start x |> curve x z |> curve z y |> curve y x |> P.close in
   let cycle' x y z = start x |> curve ~ly:true x z |> curve ~lx:true z y |> curve y x |> P.close in
-  let cycle'' x y z = start x |> curve ~ly:true x z |> curve ~lx:true z y |> curve ~lx:true y x |> P.close in
+  let cycle'' x y z = start x |> curve ~lx:true ~ly:true x z |> curve ~lx:true ~ly:true z y |> curve ~lx:true ~ly:true y x |> P.close in
   let path x y z = 
     match classify x y, classify y z, classify z x with 
     | `L,`L,`L -> cycle'' x y z

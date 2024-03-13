@@ -120,6 +120,7 @@ class virtual draw =
     val mutable color = Constants.gray
     method pos = pos    
     method radius = radius
+    method circle = {center = pos; radius}
     method color = color
     method placed = placed    
     method move p = pos <- p; placed <- true

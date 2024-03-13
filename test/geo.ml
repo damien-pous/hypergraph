@@ -4,7 +4,6 @@ open GMain
 
 open Gg
 open Vg
-open Geometry
 
 let width = 1000
 let height = 1000
@@ -17,79 +16,60 @@ let vbox = GPack.vbox ~packing:window#add ()
 let da = GMisc.drawing_area ~packing:vbox#add ()
 let size = Size2.v width' height'
 let view = Box2.unit
-let area = `O { P.o with P.width = 0.001 }
-let black = I.const Color.black
-let white = I.const Color.white
-let gray = I.const (Color.gray 0.5)
-let blue = I.const (Color.v_srgb 0.0 0.4 0.7)
-(* let violet = I.const (Color.v_srgb 0.7 0.2 0.7) *)
 
 let x = ref (P2.v 0.3 0.5)
 let y = ref (P2.v 0.7 0.5)
 let z = ref (P2.v 0.5 0.65)
 let c = ref (P2.v 0.65 0.6)
 let r = ref 0.03
+let s = ref false
 let move = ref c
-let mode = ref 2
+let mode = ref 0
 
 let repaint () =    
   let cr = Cairo_gtk.create da#misc#window in
   let vgr = Vgr.create (Vgr_cairo.target cr) `Other in 
-  let drawing = ref white in
-  let blend d = drawing := !drawing |> I.blend d in
-  let node ?(color=black) ?(radius=0.005) c =
-    blend (color |> I.cut (P.empty |> P.circle c radius))
-  in
-  let circle ?(color=black) c =
-    blend (color |> I.cut ~area (P.empty |> P.circle c.center c.radius))
-  in
-  let line ?(color=black) x y =
-    blend (color |> I.cut ~area (start x |> P.line y))
-  in
-  (* let vect ?(color=black) x d = *)
-  (*   blend (color |> I.cut ~area (start x |> P.line ~rel:true d)) *)
-  (* in *)
-  let curve p = blend (blue |> I.cut ~area p) in
-  let surface p = blend (gray |> I.cut p); curve p in
-
+  let draw = new Draw.pic in
+  let _ = draw#blend (I.const Color.white) in
+  let _ = Geometry.set_debug draw in
   let c = Geometry.circle !c !r in
   let x = !x in
   let y = !y in
   let z = !z in
-  
+
   (match !mode with
    | 0 ->
-      line x c.center;
-      line y c.center;
-      curve (Geometry.curve c x y);
-      node x;
-      node y;
+      draw#segment x c.center;
+      draw#segment y c.center;
+      draw#path (Geometry.curve ~lx:!s (* ~ly:!s *) c x y);
+      draw#point x;
+      draw#point y;
       ()
 
    | 1 ->
-      surface (Geometry.edge1 c x);
-      node x;
+      draw#surface (Geometry.edge1 c x);
+      draw#point x;
       ()
 
    | 2 ->
-      surface (Geometry.edge2 c x y);
-      node x;
-      node y;
+      draw#surface (Geometry.edge2 c x y);
+      draw#point x;
+      draw#point y;
       ()
 
    | 3 ->
-      surface (Geometry.edge3 c x y z);
-      node x;
-      node y;
-      node z;
+      draw#path (Geometry.edge3 c x y z);
+      draw#point x;
+      draw#point y;
+      draw#point z;
       ()
    
    | _ -> failwith "invalid mode"
   );
-  circle c;
+  draw#circle c;
   
 
-  let _ = Vgr.render vgr (`Image (size, view, !drawing)) in
+  let _ = Vgr.render vgr (`Image (size, view, draw#get)) in
   let _ = Vgr.render vgr (`End) in
   ()
 
@@ -116,6 +96,7 @@ let _ = window#event#connect #key_press ~callback:(fun e ->
              | "1" -> mode := 1
              | "2" -> mode := 2
              | "3" -> mode := 3
+             | "s" -> s := not !s
              | "+" -> r := !r *. 1.1
              | "-" -> r := !r /. 1.1
              | _ -> ()

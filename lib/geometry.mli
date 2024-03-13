@@ -1,5 +1,16 @@
 open Types
 
+(* debug area *)
+val set_debug: picture -> unit
+val unset_debug: unit -> unit
+
+(* directed lines *)
+val line: p2 -> p2 -> line
+val line': p2 -> v2 -> line
+
+(* circles *)
+val circle: p2 -> float -> circle
+
 (* random point in [-s;s]x[-s;s] *)
 val random2: float -> p2
 
@@ -18,11 +29,6 @@ val mid3: p2 -> p2 -> p2 -> p2
 (* directed angle between two vectors *)
 val angle: v2 -> v2 -> float
 
-(* directed lines *)
-type line
-val line: p2 -> p2 -> line
-val line': p2 -> v2 -> line
-
 (* intersection of two lines *)
 val line_inter: line -> line -> p2
 
@@ -35,10 +41,6 @@ val swap: lr -> lr
 
 (* side of a point w.r.t. a line *)
 val side: line -> p2 -> lr
-
-(* circles *)
-type circle = { center: p2; radius: float }
-val circle: p2 -> float -> circle
   
 (* [tangent_point x c o] computes the tangents of [c] going through [x],
    and returns the tangent point on side [o] of [xc] *)

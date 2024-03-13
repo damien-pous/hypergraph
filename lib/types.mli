@@ -12,6 +12,9 @@ type font = Vg.font             (* fonts *)
 type image = Vg.image           (* images *)
 type path = Vg.path             (* paths *)
 
+type line = { point: p2; dir: v2 }          (* directed line *)
+type circle = { center: p2; radius: float } (* circles *)
+
 type formatter = Format.formatter
 type pp_mode = Full | Sparse
 
@@ -29,10 +32,26 @@ class type drawable =
     inherit printable
     method pos: Gg.p2
     method radius: float
+    method circle: circle
     method color: Gg.color
     method move: Gg.p2 -> unit
     method scale: float -> unit
     method placed: bool (* was the element placed before? *)
+  end
+
+class type picture =
+  object
+    method clear: unit
+    method get: image
+    method blend: image -> unit
+    method path: ?color:color -> path -> unit
+    method surface: ?color:color -> path -> unit
+    method circle: ?color:color -> circle -> unit
+    method disc: ?color:color -> circle -> unit
+    method point: ?color:color -> p2 -> unit
+    method segment: ?color:color -> p2 -> p2 -> unit 
+    method line: ?color:color -> line -> unit 
+    method text: p2 -> string -> unit 
   end
 
 module type BASE = sig
@@ -81,7 +100,6 @@ module type IEALGEBRA = sig
   module I(M: EALGEBRA): sig val eval: 'a t -> 'a M.t end  
   val pp: pp_mode -> formatter -> #printable t -> unit
 end
-
 
 (* extension with source decorations *)
 type ('a,'b) mapper = {fs: int -> 'a -> 'b; fu: ('a,'b) umapper}
