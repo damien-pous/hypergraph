@@ -37,6 +37,11 @@ module S(M: IALGEBRA) =
       type 'a r = 'a Raw.u
       let raw u = IRU.eval u
       let pp mode f u = Raw.U.pp mode f (raw u)
+      let forget i x g =
+        let k = arity g in
+        if i>k then failwith "forget: not a valid source"
+        else if i=k then fgt x g
+        else fgt x (prm (Perm.of_cycle [i;k]) g)
     end
     type 'a u = 'a U.t
     type 'a t = 'a seq * 'a u
@@ -47,6 +52,18 @@ module S(M: IALGEBRA) =
     let width (_,u) = U.width u   (* check *)
     let size x = arity x + esize x + isize x
     let source s u = assert (Seq.size s = U.arity u); (s,u)
+    let nil () = (Seq.empty, U.nil 0)
+    let lft x (s,g) = (Seq.snoc s x, U.lft g)
+    let fgt (s,g) = 
+      match Seq.case s with
+      | None -> failwith "no source to forget"
+      | Some (s,x) -> (s,U.fgt x g)
+    let prm p (s,g) = (Perm.sapply p s, U.prm p g)
+    let forget i g =
+      let k = arity g in
+      if i>k then failwith "forget: not a valid source"
+      else if i=k then fgt g
+      else fgt (prm (Perm.of_cycle [i;k]) g)
     let map f (s,u) = (Seq.imap f.fs s, U.map f.fu u)
     module SI(N: SEALGEBRA) = struct
       module UI = M.I(N.U)

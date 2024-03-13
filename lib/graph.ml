@@ -140,12 +140,6 @@ let promote x g =
                | v -> v)
               g.edges }
 
-let forget i x g =
-  let k = g.arity in
-  if i>k then failwith "forget: not a valid source"
-  else if i=k then fgt x g
-  else fgt x (prm (Perm.of_cycle [i;k]) g)
-
 (* checking isomorphism
    naively for now: just try to match edges in all possible ways *)
 let iso cmp g h =
@@ -235,13 +229,6 @@ let iter_infos f g =
   iter_ivertices f g;         
   iter_edges (fun e _ -> f e) g
 
-let nil () = (Seq.empty, U.nil 0)
-let lft x (s,g) = (Seq.snoc s x, U.lft g)
-let fgt (s,g) = 
-  match Seq.case s with
-  | None -> failwith "no source to forget"
-  | Some (s,x) -> (s,U.fgt x g)
-let prm p (s,g) = (Perm.sapply p s, U.prm p g)
 let add_edge e n (s,g) = let e,g = U.add_edge e n g in e,(s,g)
 let rem_edge e (s,g) = (s,U.rem_edge e g)
 let add_ivertex v (s,g) = (s,U.add_ivertex v g)
@@ -259,11 +246,6 @@ let rem_vertex = function
   | Src i -> rem_source i
   | Inn x -> rem_ivertex x
 let promote x (s,g) = (Seq.snoc s x, U.promote x g)
-let forget i g =
-  let k = arity g in
-  if i>k then failwith "forget: not a valid source"
-  else if i=k then fgt g
-  else fgt (prm (Perm.of_cycle [i;k]) g)
 
 let iso cmp (_,g) (_,h) = U.iso cmp g h
 

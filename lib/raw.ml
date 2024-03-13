@@ -15,11 +15,9 @@ type 'a s =
   | Dot of 'a * 'a s * 'a s
   | Cnv of 'a s
 type 'a u = 'a s
-type 'a ru = 'a u
 
 module U = struct
 type 'a t = 'a s
-type 'a r = 'a t
 type ('a,'b) m = ('a,'b) umapper  
 
 let nil' = Nil
@@ -182,21 +180,18 @@ let pp mode =
     | Cnv u      -> Format.fprintf f (paren "%a'") pp u
 in pp BOT
 
-let raw u = u
 end
 let nil' = U.nil'
 let edg' = U.edg'
 let inj' = U.inj'
 
 type 'a t = 'a seq * 'a u
-type 'a rt = 'a t
 type ('a,'b) m = ('a,'b) mapper
 
 let arity (s,_) = Seq.size s
 let isize (_,u) = U.isize u
 let esize (_,u) = U.esize u
 let width _ = assert false      (* not useful on raw terms? *)
-let size g = arity g + isize g + esize g (* warning: possibly different from [U.size (snd g)] *)
 
 let source = U.source
 let flexible f u = let k = U.arity u in source (Seq.init k f) u
@@ -211,8 +206,6 @@ let pp mode f (s,u) =
   else
     let ppx f x = x#pp mode f in
     Format.fprintf f "#%a %a" (pp_print_list "," ppx) (Seq.to_list s) (U.pp mode) u
-
-let raw u = u
 
 module SI(X:SEALGEBRA) = struct
   module UI = U.I(X.U)

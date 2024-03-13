@@ -9,4 +9,7 @@ type 'a s = private
   | Prm of perm * 'a s
   | Edg of int * 'a
 
-include ISEALGEBRA with type 'a u = 'a s
+include ISEALGEBRA'
+        with type 'a u = 'a s
+         and type 'a ru = 'a Raw.u
+         and type 'a rt = 'a Raw.t

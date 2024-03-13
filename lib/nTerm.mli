@@ -13,4 +13,7 @@ and 'a fpt = private
   | Fgt of 'a * 'a s       (* invariant: in Fgt(x,u) all components of u touch the last source *)
   | Edg of int * perm * 'a (* permuted edge *)
 
-include ISEALGEBRA with type 'a u = 'a s
+include ISEALGEBRA'
+        with type 'a u = 'a s
+         and type 'a ru = 'a Raw.u
+         and type 'a rt = 'a Raw.t
