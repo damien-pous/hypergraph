@@ -60,6 +60,19 @@ let rec fold f a = function
   | S i -> f i a
   | U(x,y) -> fold f (fold f a y) x
 
+let iteri f x =
+  let rec iteri id = function
+    | N -> id
+    | S i -> f id i; id+1
+    | U(x,y) -> iteri (iteri id x) y
+  in ignore (iteri 1 x)
+exception Found of int
+let index j x =
+  try
+    iteri (fun id i -> if i==j then raise (Found id)) x;
+    failwith "not found"
+  with Found id -> id
+
 let to_list l = fold List.cons [] l
 
 let pp ppe f l = Format.fprintf f "{%a}" (pp_print_list "," ppe) (to_list l)

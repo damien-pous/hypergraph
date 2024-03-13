@@ -1,11 +1,15 @@
 open Gg
 open Vg
+open Misc
 
 (* random point in [-s;s]x[-s;s] *)
 val random2: float -> p2
 
 (* distance between two points *)
 val dist: p2 -> p2 -> float
+
+(* is a point inside a drawable element *)
+val inside: p2 -> drawable -> bool
 
 (* barycenter *)
 val center: p2 list -> p2

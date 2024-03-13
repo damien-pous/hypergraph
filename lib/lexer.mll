@@ -11,6 +11,7 @@
            | None -> int_of_string (String.sub s i (n-i)) :: acc
            | Some j -> split (int_of_string (String.sub s i (j-i-1)) :: acc) (j+1)
     in List.rev (split [int_of_string x] 0)
+  let keyval k v = KEYVAL(Info.kv k v)
 }
 
 let lstart = ['a'-'e' 'g'-'k' 'm'-'r' 't'-'z' ]
@@ -55,16 +56,16 @@ rule token = parse
   (* injections: any number of elements, if only one large int, then have it start with a 0 *)
   | '{' (ndigit* as s) '}'                 { INJ (Inj.of_list (diglist_of_string s)) }
   | "{0" (nint as x)((',' nint)* as q) '}' { INJ (Inj.of_list (numlist_of_string x q)) }
+  | '#'                                    { SHARP }
   | '#' (digit+ as x)                      { FIX (int_of_string x) }
-  | '-'                                    { LABEL ""}
   | label as s
-  | '\\' (word as s)                       { LABEL s }
+  | '-' (word as s)                        { LABEL s }
   | "pos=" (pos as p)
-  | "pos=(" (pos as p) ')'                 { KEYVAL ("pos",p) }
+  | "pos=(" (pos as p) ')'                 { keyval "pos" p }
   | "shift=" (pos as v)
-  | "shift=(" (pos as v) ')'               { KEYVAL ("shift",v) }
-  | "radius=" (float as x)                 { KEYVAL ("radius",x) }
-  | "scale=" (float as x)                  { KEYVAL ("scale",x) }
-  | (key as k) '=' (word as v)             { KEYVAL (k,v) }
+  | "shift=(" (pos as v) ')'               { keyval "shift" v }
+  | "radius=" (float as x)                 { keyval "radius" x }
+  | "scale=" (float as x)                  { keyval "scale" x }
+  | (key as k) '=' (word as v)             { keyval k v }
   | eof                                    { EOF }
   | _ as c                                 { Printf.kprintf failwith "lexing error near `%c'" c }

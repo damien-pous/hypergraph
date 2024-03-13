@@ -1,36 +1,42 @@
 open Hypergraphs
-open Conversions
+open Conversions.S
 
 let from_string s =
   try
     let l = Lexing.from_string s in
-    Parser.main Lexer.token l
+    let t = Parser.main Lexer.token l in
+    Raw.smap Info.print_smapper t
   with e -> Format.eprintf "error parsing  %s@." s; raise e
 
-let to_string = Format.kasprintf (fun s -> s) "%a" Raw.pp_full
+let to_string = Format.kasprintf (fun s -> s) "%a" (Raw.spp Full)
 
-let iso = Graph.iso Info.same_label
+let iso = Graph.siso Misc.same_label
+let gpp = Graph.spp Sparse
+let rpp = Raw.spp Sparse
+(* let rpp_full = Raw.spp Full *)
 
 let test s =
   let t = from_string s in
   let s' = to_string t in
   try
     let t' = from_string s' in
-    if t<>t' then (
-      Format.eprintf "Warning: reparsing mismtach\n%s\n%a\n%s\n%a@." s Raw.pp_full t s' Raw.pp_full t';
-      let _ = iso (graph_of_raw t) (graph_of_raw t') ||
-                (Format.eprintf "Error: reparsing mismtach\n%s\n%a\n%s\n%a@." s Raw.pp t s' Raw.pp t'; failwith "iso") in
-      ()
-    );
+    (* if t<>t' then ( *)
+    (*   Format.eprintf "Warning: reparsing mismatch\n%s\n%a\n%s\n%a@." s rpp_full t s' rpp_full t'; *)
+      let _ =
+    iso (graph_of_raw t) (graph_of_raw t') ||
+      (Format.eprintf "Error: reparsing mismatch\n%s\n%a\n%s\n%a@." s rpp t s' rpp t'; failwith "iso") in
+    ()
+    (* ) *)
+    ;
     (* Format.eprintf "t = %a@." Raw.pp t; *)
     (* Format.eprintf "t' = %a@." Term.pp (term_of_raw t); *)
     (* Format.eprintf "t'' = %a@." NTerm.pp (nterm_of_raw t); *)
     let g = graph_of_raw t in
     let g' = graph_of_term (term_of_raw t) in
     let g'' = graph_of_nterm (nterm_of_raw t) in
-    let _ = iso g g' || (Format.eprintf "Sanity failed iso:\ng = \n%ag'= \n%a@." Graph.pp g Graph.pp g'; failwith "iso") in
-    let _ = iso g' g'' || (Format.eprintf "Sanity failed iso:\ng' = \n%ag''= \n%a@." Graph.pp g' Graph.pp g''; failwith "iso") in
-    let _ = iso g g'' || (Format.eprintf "Sanity failed iso:\ng = \n%ag''= \n%a@." Graph.pp g Graph.pp g''; failwith "iso") in
+    let _ = iso g g' || (Format.eprintf "Sanity failed iso:\ng = \n%ag'= \n%a@." gpp g gpp g'; failwith "iso") in
+    let _ = iso g' g'' || (Format.eprintf "Sanity failed iso:\ng' = \n%ag''= \n%a@." gpp g' gpp g''; failwith "iso") in
+    let _ = iso g g'' || (Format.eprintf "Sanity failed iso:\ng = \n%ag''= \n%a@." gpp g gpp g''; failwith "iso") in
     ()
   with e -> Format.eprintf "init input was %s@." s; raise e
 
@@ -39,7 +45,7 @@ let test_iso s s' =
   let t' = from_string s' in
   let g = graph_of_raw t in
   let g' = graph_of_raw t' in
-  iso g g' || (Format.eprintf "Sanity failed iso:\nt = \n%at'= \n%a@." Raw.pp t Raw.pp t'; failwith "iso")
+  iso g g' || (Format.eprintf "Sanity failed iso:\nt = %a\nt'= %a@." rpp t rpp t'; failwith "iso")
   
 let _ = test "a|(b|c)"
 let _ = test "(a|b)|c"
@@ -67,6 +73,7 @@ let _ = test "f(134)ld"
 let _ = test "f{324}d"
 let _ = test "f({123}a | {12}b | {324}d)"
 let _ = test "#3 lb"
+let _ = test "#<color=orange>,<color=yellow> lb"
 
 let _ = test_iso "a|(b|c)" "(a|b)|c"
 let _ = test_iso "#3 a|(b|c)" "#3 (a|b)|c"

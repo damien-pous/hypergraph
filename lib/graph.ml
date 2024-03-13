@@ -1,54 +1,58 @@
+open Misc
 open Common
-open Gg
 
-module E = Id.Make(struct let prefix = "e" end)
-type edge = E.t
-type 'a emap = 'a E.map
-let nomap f = E.map (fun (i,n) -> (i,Seq.omap f n))
-let nmap f = E.map (fun (i,n) -> (i,Seq.map f n))
-let nfilter f = nomap (fun v -> if f v then Some v else None)
-
-module I = Id.Make(struct let prefix = "x" end)
-type ivertex = I.t
-type 'a imap = 'a I.map
-
-type vertex = Src of int | Inn of ivertex
+type 'a vertex = Src of int | Inn of 'a
 let src i = Src i
 let inn i = Inn i
+let vmap f = function
+  | Inn x -> Inn (f x)
+  | Src i -> Src i
+
+type 'a edge = { einfo: 'a; neighbours: 'a vertex seq }
+let einfo e = e.einfo
+let neighbours e = e.neighbours
+
+let nomap f = Set.map (fun e -> { e with neighbours = Seq.omap f e.neighbours })
+let nmap f = Set.map (fun e -> { e with neighbours = Seq.map f e.neighbours })
+let nfilter f = nomap (fun v -> if f v then Some v else None)
 
 module M = struct
 type 'a t = {
     arity: int;
-    ivertices: 'a imap;
-    edges: ('a * vertex seq) emap;
+    ivertices: 'a set;
+    edges: 'a edge set;
   }
 let arity g = g.arity
-let isize g = I.size g.ivertices
-let esize g = E.size g.edges
+let edges g = g.edges
+
+let isize g = Set.size g.ivertices
+let esize g = Set.size g.edges
+
+let iter_ivertices f g = Set.iter f g.ivertices
+let iter_edges f g = Set.iter (fun e -> f e.einfo e.neighbours) g.edges
 
 let nil arity =
-  { arity; ivertices = I.empty; edges = E.empty }
+  { arity; ivertices = Set.empty; edges = Set.empty }
 
 let par g h =
   assert (arity g = arity h);
   { g with
-    ivertices = I.union g.ivertices h.ivertices;
-    edges = E.union g.edges h.edges }
+    ivertices = Set.union g.ivertices h.ivertices;
+    edges = Set.union g.edges h.edges }
 
 let lft g = { g with arity = g.arity + 1 }
 
-let fgt i g =
+let fgt z g =
   let k = arity g in
   assert (k > 0);
-     let z = I.fresh() in
-     let z' = Inn z in
-     { arity = k-1;
-       ivertices = I.add z i g.ivertices;
-       edges = nmap 
-                 (function
-                  | Src i when i=k -> z'
-                  | x -> x)
-                 g.edges }
+  let z' = Inn z in
+  { arity = k-1;
+    ivertices = Set.add z g.ivertices;
+    edges = nmap 
+              (function
+               | Src i when i=k -> z'
+               | x -> x)
+              g.edges }
 
 let src_map f = function
   | Src i -> Src (f i)
@@ -59,81 +63,70 @@ let prm p g =
     edges = nmap (src_map (Perm.apply p)) g.edges }
 
 let edg arity einfo =
-  let e = E.fresh() in
   { arity;
-    ivertices = I.empty;
-    edges = E.single e (einfo, Seq.init arity src) }
+    ivertices = Set.empty;
+    edges = Set.single { einfo; neighbours=Seq.init arity src } }
 
-let iter_edges f g = E.iter (fun e (i,n) -> f e i n) g.edges
-let iter_ivertices f g = I.iter f g.ivertices
-
-let edges g = E.values g.edges
-let neighbours g e = snd (E.get g.edges e)
-let einfo g e = fst (E.get g.edges e)
-let iinfo g x = I.get g.ivertices x
-
-let map ~fi ~fe g =
+let map f g =
+  (* TODO: need to memoize [f] to guarantee physical identities *)
+  let _ = failwith "Warning: fix Graph.map before using it" in
   { arity = g.arity;
-    ivertices = I.map fi g.ivertices;
-    edges = E.map (fun (x,n) -> fe x, n) g.edges }
+    ivertices = Set.map f.fi g.ivertices;
+    edges = Set.map (fun x -> { einfo = f.fe x.einfo;
+                                neighbours = Seq.map (vmap f.fi) x.neighbours }) g.edges }
 
-let map' fi fe g =
-  let ivertices = I.map fi g.ivertices in
-  let edges = E.map (fun (x,n) -> fe (I.get ivertices) x n, n) g.edges in
-  { arity = g.arity; ivertices; edges }
-
-let ppv f = function
+let pp mode f g =
+  let ppv f = function
   | Src i -> Format.fprintf f "%i" i
-  | Inn i -> I.pp f i
-let pp_gen ~ppi ~ppe f g =
-  iter_ivertices (fun v x ->
-      Format.fprintf f "%a %a\n" I.pp v ppi x) g;
-  iter_edges (fun e x n ->
-      Format.fprintf f "%a %a\n" E.pp e ppe x;
+  | Inn x -> Format.fprintf f "i%i" (Set.index x g.ivertices)
+  in
+  Set.iteri (fun id x -> Format.fprintf f "i%i %t\n" id (x#pp mode)) g.ivertices;
+  Set.iteri (fun id x ->
+      Format.fprintf f "e%i %t\n" id (x.einfo#pp mode);
         Seq.iter (fun i v ->
-          Format.fprintf f "%a -- %a [label=%i]\n" E.pp e ppv v i
-        ) n
-    ) g
-
-let pp_ ?full = pp_gen ~ppi:(Info.pp ?full) ~ppe:(Info.pp ?full)
-let pp_dot =
-  let ppi f _ = Format.fprintf f "[shape=point]\n" in
-  let ppe f _ = Format.fprintf f "[shape=circle]\n" in
-  fun f g ->    
-  Format.fprintf f "graph {\n";
-  for i = 1 to arity g do
-    Format.fprintf f "%i [shape=box]\n" i;
-  done;
-  Format.fprintf f "%a}\n" (pp_gen ~ppi ~ppe) g
+          Format.fprintf f "e%i -- %a [label=%i]\n" id ppv v i
+        ) x.neighbours
+    ) g.edges
 
 end
 include M
 include Extend(M)
+type 'a graph = 'a t
+type 'a sgraph = 'a st
+
+let sinfo (s,_) = Seq.get s 
+let vinfo (s,_) = function
+  | Src i -> Seq.get s i
+  | Inn x ->  x
+let iter_sources f (s,_) = Seq.iter f s
+let iter_vertices f (_,g as sg) =
+  iter_sources (fun i _ -> f (src i)) sg;
+  iter_ivertices (fun i -> f (inn i)) g
+
 
 module INIT(M: EALGEBRA) = struct
   let eval g =
-    let k = ref (arity g) in
-    let t = Hashtbl.create 10 in
-    let names = I.map (fun x -> incr k; Hashtbl.add t !k x; !k) g.ivertices in
-    let k' = !k in
+    let k = arity g in
+    let v = isize g in
+    let k' = k + v in
     let idx = function
       | Src i -> i
-      | Inn i -> I.get names i
+      | Inn x -> k + Set.index x g.ivertices (* or reversed, if Set.fold changes *)
     in
-    let edges = ref [] in
-    iter_edges (fun _ e n ->
-        edges := M.inj k' (Inj.of_list (List.map idx (Seq.to_list n)))
-                   (M.edg (Seq.size n) e) :: !edges)
-      g;
-    let rec fgt i =
-      if i=k' then M.bigpar k' !edges
-      else M.fgt (Hashtbl.find t (i+1)) (fgt (i+1))
-    in fgt (arity g)    
+    let u =
+      Set.fold (fun e ->
+          let e,n = e.einfo, e.neighbours in
+          M.par
+            (M.inj k' (Inj.of_list (List.map idx (Seq.to_list n)))
+               (M.edg (Seq.size n) e)))
+        (M.nil k') g.edges
+    in
+    Set.fold M.fgt u g.ivertices
+  let seval (s,g) = s,eval g
 end
 
 (* checking isomorphism
-   naively for now: just try to match edges in all possible ways
- *)
+   naively for now: just try to match edges in all possible ways *)
 let iso cmp g h =
   let rec extend1 acc r x y =
     match Set.case r with
@@ -150,7 +143,9 @@ let iso cmp g h =
     | Inn x, Inn y -> extend1 Set.empty r x y
     | _ -> None
   in    
-  let extend r (x,nx) (y,ny) =
+  let extend r x y =
+    let x,nx = x.einfo,x.neighbours in
+    let y,ny = y.einfo,y.neighbours in
     if cmp x y && Seq.size nx = Seq.size ny then
       Seq.ofold2 extend1 r nx ny
     else None
@@ -173,34 +168,9 @@ let iso cmp g h =
       esize g = esize h &&
         iso (edges g) (edges h) Set.empty
 
-type 'a graph = 'a t
-module Sourced = struct
-  type 'a t = 'a seq * 'a graph
-  let map ~fs ~fi ~fe (s,g) =
-    Seq.map fs s, map ~fi ~fe g
-  let pp_gen ~pps ~ppi ~ppe f (s,g) =
-    Seq.iter (fun i x -> Format.fprintf f "%i %a\n" i pps x) s;
-    pp_gen ~ppi ~ppe f g
-  let vpos (s,g)= function
-    | Src i -> Info.pos (Seq.get s i)
-    | Inn x -> Info.pos (iinfo g x)
-  let center_edge (_,g as sg) e =
-    let n = neighbours g e in
-    match Seq.size n with
-    | 0 -> ()
-    | 1 -> let p = vpos sg (Seq.get n 1) in
-           let x = einfo g e in
-           let px = Info.pos x in
-           let v = V2.unit (V2.sub px p) in
-           Info.set_pos x (V2.add p (V2.smul (Info.radius x *. 2.) v))
-    | _ -> 
-       let c = Geometry.center (Seq.lmap (vpos sg) n) in
-       let x = einfo g e in
-       Info.set_pos x c
-end
-type 'a sgraph = 'a Sourced.t
+let siso cmp (_,g) (_,h) = iso cmp g h
 
-class ['a] dyn = 
+class ['a] dynamic = 
   object(self)
     val mutable sources = Seq.empty
     val mutable graph = nil 0
@@ -213,27 +183,22 @@ class ['a] dyn =
     method sgraph = sources,graph
     method arity = arity graph
 
-    method neighbours e = snd (E.get graph.edges e)
-    method einfo e = fst (E.get graph.edges e)
-
     method sinfo = Seq.get sources
-    method iinfo = I.get graph.ivertices
-    method vinfo = function
-      | Src i -> self#sinfo i
-      | Inn x -> self#iinfo x
+    method vinfo = vinfo (sources,graph)
 
     method iter_edges f =
-      iter_edges f graph
+      Set.iter f self#graph.edges
     method iter_sources f =
       Seq.iter f sources;
     method iter_ivertices f =
       iter_ivertices f graph
     method iter_vertices f =
-      self#iter_sources (fun i -> f (src i));
+      self#iter_sources (fun i _ -> f (src i));
       self#iter_ivertices (fun i -> f (inn i));         
     method iter_infos f =
-      self#iter_vertices (fun _ -> f);
-      self#iter_edges (fun _ x _ -> f x)
+      self#iter_sources (fun _ -> f);
+      self#iter_ivertices f;         
+      self#iter_edges (fun x -> f x.einfo)
 
     method lift v =
       sources <- Seq.snoc sources v;
@@ -243,19 +208,17 @@ class ['a] dyn =
       sources <- Perm.sapply p sources;
       graph <- prm p graph
         
-    method add_edge (i: 'a) n =
-      let e = E.fresh() in
-      graph <- { graph with edges = E.add e (i,n) graph.edges };
+    method add_edge einfo neighbours =
+      let e = {einfo;neighbours} in
+      graph <- { graph with edges = Set.add e graph.edges };
       e
     method add_ivertex i =
-      let x = I.fresh() in
-      graph <- { graph with ivertices = I.add x i graph.ivertices };
-      x
+      graph <- { graph with ivertices = Set.add i graph.ivertices }
     method rem_edge e =
-      graph <- { graph with edges = E.rem e graph.edges }
+      graph <- { graph with edges = Set.remq e graph.edges }
     method rem_ivertex x =
       graph <- { graph with
-                 ivertices = I.rem x graph.ivertices;
+                 ivertices = Set.remq x graph.ivertices;
                  edges = nfilter
                            (function
                             | Inn y when x == y -> false
@@ -284,9 +247,9 @@ class ['a] dyn =
 
     method promote x =
       let arity = graph.arity+1 in
-      sources <- Seq.snoc sources (self#iinfo x);
+      sources <- Seq.snoc sources x;
       graph <- { arity;
-                 ivertices = I.rem x graph.ivertices;
+                 ivertices = Set.remq x graph.ivertices;
                  edges = nmap
                            (function
                             | Inn y when x == y -> src arity
@@ -305,11 +268,11 @@ class ['a] dyn =
       else if i=k then self#forget_last
       else (self#permute (Perm.of_cycle [i;k]); self#forget_last)
 
-    method find f: [`V of vertex * 'a | `E of edge * 'a | `N] =
+    method find f: [`V of 'a vertex | `E of 'a edge | `N] =
       let r = ref `N in
       try
-        self#iter_vertices (fun v i -> if f i then (r := `V(v,i); raise Not_found));
-        self#iter_edges (fun e i _ -> if f i then (r := `E(e,i); raise Not_found));
+        self#iter_vertices (fun v -> if f (self#vinfo v) then (r := `V v; raise Not_found));
+        self#iter_edges (fun e -> if f e.einfo then (r := `E e; raise Not_found));
         `N
       with Not_found -> !r
 

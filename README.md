@@ -12,30 +12,36 @@ maybe [opam install otfm] ?
 
 # syntax
 
--- terms:
+-- terms (u,v)
 0            empty graph
+a            a-labeled edge
 u | v        parallel composition
 fu           forget u
 lu           lift u
 pu           permute p u
-a            edge labeled a
--            unlabelled edge
-\foo         edge labeled foo (f/l/s being reserved for forget/lift/star)
+
 iu           u located according to injection i
 s(u1,...,uk) series composition (without the forget)
 *(u1,...,uk) star operation
 u.v          binary sequential composition
 u'           swap last two sources
-#i u         force arity i
 
--- permutations
+-- sourced terms (at top level only)
+#k u                              set arity to k
+#<key=val;...><key=val;...>... u  set arity and source decorations
+
+-- labels (a)
+s             when s does not contain f/l/s, which are reserved for forgets/lifts/series
+-s            when s does, or when s is empty
+
+-- permutations (p)
 [231]         explicit permutation of size <=9
 (234)         cyclic permutation (here, [1342]), of size <=9
 [1,..,8,10,9] explicit permutation of possibly greater size
 (9,10)        cyclic permutation of possible greater size
 note: the identity permutations cannot be written
 
--- injections
+-- injections (i)
 {264}         injection mapping 1 to 2, 2 to 6, 3 to 4 
 {2,6,11}      injection with potentially bigger values
 {011}         injection mapping 1 to 11
@@ -49,18 +55,18 @@ forgets, edges, stars, and dots can be decored with key value lists:
 
 interpreted keys:
  pos=x,y     : give an explicit position
- shift=x,y   : give an explicit shift (for edges only)
+ shift=x,y   : give an explicit shift (for edges)
  radius=x    : give an explicit radius
- scale=x     : give an explicit scale
  label=x     : give an explicit label
 
 
 # modules
 
+## lib
 Misc:        miscellaneous utilities
 
 Set:         finite (multi)sets
-Id:          identifiers and maps indexed by identifiers
+Id:          identifiers and maps indexed by identifiers (no longer used)
 Seq:         finite sequences, index starting at 1
 Perm:        finite support permutations
 Inj:         finite support injections
@@ -68,7 +74,7 @@ ISeq:        increasing sequences
 
 Info:        informations about vertices & edges
 
-Common:      type aliases, basic functions, algebra types
+Common:      type aliases, algebra types
 
 Raw:         raw terms, where arity is inferred
 Term:        plain terms, as in the paper
@@ -83,12 +89,13 @@ Conversions: conversion functions between graphs and various kinds of terms
 
 Constants:   constants for drawing graphs
 Geometry:    geometric utilities to draw edges
-Drawable:    drawing graphs
-
+Draw:        drawing graphs
 Place:       placing graphs
 
-Sanity:      sanity checks
+## bin
+Hg:          text mode program
+Gui:         GTK program
 
-Main:        tests in text mode
-Ui:          user interface
-Geometry-ui: user interface to debug edge drawing
+## tests
+Sanity:      sanity checks
+Geo:         GTK program to debug edge drawing

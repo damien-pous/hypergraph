@@ -1,3 +1,4 @@
+open Misc
 open Common
 
 type 'a s =
@@ -45,16 +46,16 @@ let lft u = Lft u
 let prm p u = Prm(p,u)
 let edg k x = Edg(k,x)
 
-let pp_ ?full _ _ = ignore(full); assert false (* derived below *)
+let pp _ _ _ = assert false (* derived below *)
 
-let map ~fi ~fe =
+let map f =
   let rec map = function
     | Nil k    -> nil k
     | Par(u,v) -> par (map u) (map v)
-    | Fgt(x,u) -> fgt (fi x) (map u)
+    | Fgt(x,u) -> fgt (f.fi x) (map u)
     | Lft u    -> lft (map u)
     | Prm(p,u) -> prm p (map u)
-    | Edg(k,l) -> edg k (fe l)
+    | Edg(k,l) -> edg k (f.fe l)
   in map
 
 end
@@ -69,9 +70,10 @@ module INIT(X: ALGEBRA) = struct
     | Lft u    -> X.lft (eval u)
     | Prm(p,u) -> X.prm p (eval u)
     | Edg(k,l) -> X.edg k l
+  let seval (s,u) = (s,eval u)
 end
 
-let raw u = let module I = INIT(Raw) in Raw.fix (arity u) (I.eval u)
-let pp_ ?full f u = Raw.pp_ ?full f (raw u)
-let pp = pp_ ~full:false
-let pp_full = pp_ ~full:true
+let raw u = let module I = INIT(Raw) in I.eval u
+let sraw u = let module I = INIT(Raw) in I.seval u 
+let pp mode f u = Raw.pp mode f (raw u)
+let spp mode f u = Raw.spp mode f (sraw u)

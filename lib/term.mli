@@ -14,3 +14,4 @@ include INITIAL_ALGEBRA with type 'a t = 'a s
 val width: 'a t -> int
 
 val raw: 'a t -> 'a Raw.t
+val sraw: 'a st -> 'a Raw.st

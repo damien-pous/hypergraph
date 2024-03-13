@@ -5,19 +5,25 @@ type 'a t = 'a list
 
 let get l i = List.nth l (List.length l - i)
 let init n f = List.init n (fun i -> f (n-i))
-let to_list = List.rev
-let lmap = List.rev_map
+let size = List.length
+let map = List.map
 let mem = List.mem
+let to_list = List.rev
+let of_list = List.rev
+let lmap = List.rev_map
+let imap f s =
+  let n = size s in
+  List.mapi (fun i -> f (n-i)) s
 let empty = []
 let snoc q x = x::q
 let case = function [] -> None | x::q -> Some(q,x)
 let is_empty l = l=[]
 
-let map = List.map
 let iter f l =
   let n = List.length l in
   List.iteri (fun i x -> f (n-i) x) l
 let fold f a l = List.fold_right f a l
+let forall = List.for_all
 
 let rec omap f = function
   | [] -> []
@@ -34,7 +40,5 @@ let rec ofold2 f a h k =
 let rec id = function
   | 0 -> []
   | k -> k::id (k-1)
-
-let size = List.length
 
 let pp ppe f l = Format.fprintf f "{%a}" (pp_print_list "," ppe) (to_list l)

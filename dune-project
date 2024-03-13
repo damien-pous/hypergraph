@@ -15,7 +15,7 @@
 
 (documentation https://url/to/documentation)
 
-(using menhir 2.0)
+(using menhir 3.0)
 
 (package
  (name hypergraphs)

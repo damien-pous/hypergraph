@@ -1,48 +1,28 @@
 open Common
 
 (** graphs with inner elements decorated with 'a values *)
-include INITIAL_ALGEBRA                (* TODO: INITIAL *)
+include INITIAL_ALGEBRA
+type 'a graph = 'a t
+type 'a sgraph = 'a st
+type 'a vertex = Src of int | Inn of 'a
+type 'a edge
 
-type ivertex
-type edge
-type vertex = Src of int | Inn of ivertex
+val neighbours: 'a edge -> 'a vertex seq
+val einfo: 'a edge -> 'a
+val sinfo: 'a st -> int -> 'a
+val vinfo: 'a st -> 'a vertex -> 'a
 
-val iter_edges: (edge -> 'a -> vertex seq -> unit) -> 'a t -> unit
-val iter_ivertices: (ivertex -> 'a -> unit) -> 'a t -> unit
-
-val neighbours: 'a t -> edge -> vertex seq
-val einfo: 'a t -> edge -> 'a
-val iinfo: 'a t -> ivertex -> 'a
-
-val map': ('a -> 'b) -> ((ivertex -> 'b) -> 'a -> vertex seq -> 'b) -> 'a t -> 'b t
+val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a t -> unit
+val iter_ivertices: ('a -> unit) -> 'a t -> unit
+val iter_vertices: ('a vertex -> unit) -> 'a st -> unit
+val iter_sources: (int -> 'a -> unit) -> 'a st -> unit
 
 (* isomorphim check, using the given function to compare edge infos *)
 val iso : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-
-(* printing in dot format *)
-val pp_dot: Format.formatter -> info t -> unit
-
-(** graphs with *all* elements decorated with 'a values *)
-type 'a graph = 'a t
-module Sourced: sig
-  type 'a t = 'a seq * 'a graph
-  val vpos: info t -> vertex -> p2
-  val center_edge: info t -> edge -> unit
-  val map :
-    fs:('a -> 'b) ->
-    fi:('a -> 'b) ->
-    fe:('a -> 'b) ->
-    'a t -> 'b t
-  val pp_gen :
-    pps:(Format.formatter -> 'a -> unit) ->
-    ppi:(Format.formatter -> 'a -> unit) ->
-    ppe:(Format.formatter -> 'a -> unit) ->
-    Format.formatter -> 'a t -> unit
-end
-type 'a sgraph = 'a Sourced.t
+val siso : ('a -> 'a -> bool) -> 'a st -> 'a st -> bool
 
 (** dynamic graphs, which can be modified *)
-class ['a] dyn: 
+class ['a] dynamic: 
   object
     method set: 'a sgraph -> unit
 
@@ -51,28 +31,25 @@ class ['a] dyn:
     method graph: 'a graph
     method arity: int
 
-    method neighbours: edge -> vertex seq
-    method einfo: edge -> 'a
     method sinfo: int -> 'a
-    method iinfo: ivertex -> 'a
-    method vinfo: vertex -> 'a
+    method vinfo: 'a vertex -> 'a
 
     method iter_sources: (int -> 'a -> unit) -> unit
-    method iter_ivertices: (ivertex -> 'a -> unit) -> unit
-    method iter_vertices: (vertex -> 'a -> unit) -> unit
-    method iter_edges: (edge -> 'a -> vertex seq -> unit) -> unit
+    method iter_ivertices: ('a -> unit) -> unit
+    method iter_vertices: ('a vertex -> unit) -> unit
+    method iter_edges: ('a edge -> unit) -> unit
     method iter_infos: ('a -> unit) -> unit
 
-    method add_edge: 'a -> vertex seq -> edge
-    method add_ivertex: 'a -> ivertex
-    method rem_edge: edge -> unit
-    method rem_ivertex: ivertex -> unit
+    method add_edge: 'a -> 'a vertex seq -> 'a edge
+    method add_ivertex: 'a -> unit
+    method rem_edge: 'a edge -> unit
+    method rem_ivertex: 'a -> unit
     method rem_source: int -> unit
-    method rem_vertex: vertex -> unit
-    method promote: ivertex -> unit
-    method permute: Perm.t -> unit
+    method rem_vertex: 'a vertex -> unit
+    method promote: 'a -> unit
+    method permute: perm -> unit
     method forget: int -> unit
     method lift: 'a -> unit
 
-    method find: ('a -> bool) -> [`V of vertex * 'a | `E of edge * 'a | `N]
+    method find: ('a -> bool) -> [`V of 'a vertex | `E of 'a edge | `N]
   end

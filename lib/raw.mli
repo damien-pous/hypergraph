@@ -13,12 +13,13 @@ type 'a s = private
   | Str of 'a * 'a s list
   | Dot of 'a * 'a s * 'a s
   | Cnv of 'a s
-  (* to fix an explicit arity *)
-  | Fix of int * 'a s
 
 include INITIAL_ALGEBRA with type 'a t = 'a s
 
-val nil': 'a s
-val inj': inj -> 'a s -> 'a s
-val edg': 'a -> 'a s
-val fix: int -> 'a s -> 'a s
+val nil': 'a t
+val inj': inj -> 'a t -> 'a t
+val edg': 'a -> 'a t
+
+val fix: (int -> 'a) -> int -> 'a t -> 'a st
+val flex: (int -> 'a) -> 'a t -> 'a st
+val source: 'a seq -> 'a t -> 'a st

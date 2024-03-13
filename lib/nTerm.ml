@@ -1,3 +1,4 @@
+open Misc
 open Common
 
 type 'a s = int * (iseq * 'a fpt) set
@@ -7,22 +8,22 @@ and 'a fpt =
 
 let ismap f = Set.map (fun (i,x) -> i,f x)
 
-
 module INIT(X: EALGEBRA) = struct
   let rec eval (k,s) =
     X.bigpar k (Set.lmap (fun (i,x) -> X.inj k (ISeq.to_inj i) (fp_eval x)) s)
   and fp_eval = function
     | Fgt(x,u) -> X.fgt x (eval u)
     | Edg(k,p,x) -> X.prm p (X.edg k x)
+  let seval (s,u) = (s,eval u)
 end
 
-let raw u = let module I = INIT(Raw) in Raw.fix (fst u) (I.eval u)
+let raw u = let module I = INIT(Raw) in I.eval u
+let sraw u = let module I = INIT(Raw) in I.seval u 
 
 module M = struct
 type 'a t = 'a s
 
-let pp_ ?full f u = Raw.pp_ ?full f (raw u)
-(* let pp = pp_ ~full:false *)
+let pp mode f u = Raw.pp mode f (raw u)
 
 let arity (k,_) = k
 (* let fp_arity = function *)
@@ -57,7 +58,6 @@ let rec prm p (k,s) =
   (k, Set.map
         (fun (i,x) ->
           let j,q = ISeq.map p i in
-          (* Format.printf "prm: %a %a %a@." ISeq.pp i ISeq.pp j Perm.pp q; *)
           j, fp_prm q x) s)
 and fp_prm p = function
   | Edg(k,q,x) -> Edg(k,Perm.comp q p,x)
@@ -66,20 +66,17 @@ and fp_prm p = function
 let lft (k,s) = (k+1,s)
 
 let fgt x (k,s) =
-  (* Format.printf "fgt %a@." (pp ~ppi:(fun _ _ -> ()) ~ppe:(fun f _ -> Format.pp_print_char f '-')) (k,s); *)
   let u,v = Set.partition (fun (inj,_) -> ISeq.mem k inj) s in
-  (* Format.printf "fgt: %i %i %i@." k (Set.size u) (Set.size v); *)
   let l = Set.fold (fun (inj,_) -> ISeq.merge inj) ISeq.empty v in
-  (* Format.printf "fgt: %a@." ISeq.pp l; *)
   let v = Set.map (fun (inj,fp) -> (ISeq.reindex inj l,fp)) v in
   let i = ISeq.crop l in
   (k-1,Set.union (Set.single(i,Fgt(x,(ISeq.size i+1,v)))) u)
 
-let map ~fi ~fe =
+let map f =
   let rec map (k,s) = (k,ismap fp_map s)
   and fp_map = function
-    | Fgt(x,u) -> Fgt(fi x, map u)
-    | Edg(k,p,x) -> Edg(k,p,fe x)
+    | Fgt(x,u) -> Fgt(f.fi x, map u)
+    | Edg(k,p,x) -> Edg(k,p,f.fe x)
   in map
 
 end

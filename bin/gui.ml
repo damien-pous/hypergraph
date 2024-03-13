@@ -1,14 +1,16 @@
 open Hypergraphs
+open Misc
+open Conversions
+
 open GMain
 
 open Gg
 open Vg
-open Conversions
 
 (* sanity checks *)
 (* open Sanity *)
 
-let graph = new Drawable.graph
+let graph = new Graph.dynamic
 let active = ref `N
 let mode = ref `Normal
 let view_center = ref V2.zero
@@ -83,7 +85,7 @@ let render () =
           (y -. te.height /. 2. -. te.y_bearing);
         Cairo.show_text cr s
       in
-      graph#iter_infos (fun i -> text (Info.pos i) (Info.label i))
+      graph#iter_infos (fun x -> text x#pos x#text)
     end;
   da#misc#draw None
 
@@ -118,20 +120,20 @@ let export_svg() =
   print_endline "exported to test.svg"
 
 (* recomputing the picture and rendering it *)
-let redraw() = picture := graph#draw; render()
+let redraw() = picture := Draw.graph graph#sgraph; render()
 
 let relabel msg =
-  let g = snd graph#sgraph in
-  let t = raw_of_graph g in
-  let n = normalise (term_of_raw t) in
+  let g = graph#sgraph in
+  let t = S.raw_of_graph g in
+  let n = S.normalise (S.term_of_raw t) in
   Format.kasprintf label#set_label
     "%sExtracted term: %a\nNormalised term: %a" msg
-    Raw.pp t NTerm.pp n;
-  let same_label x y = Info.label x = Info.label y in
-  let _ = Graph.iso same_label g (graph_of_raw t) ||
-            (Format.eprintf "%a" Graph.pp g; failwith "Mismatch between graph and extracted term")
+    (Raw.spp Sparse) t (NTerm.spp Sparse) n;
+  let _ = Graph.siso same_label g (S.graph_of_raw t) ||
+            (Format.eprintf "%a" (Graph.spp Sparse) g;
+             failwith "Mismatch between graph and extracted term")
   in
-  let _ = Graph.iso same_label g (graph_of_nterm n) ||
+  let _ = Graph.siso same_label g (S.graph_of_nterm n) ||
             failwith "Mismatch between graph and normalised term"
   in
   ()
@@ -140,14 +142,16 @@ let set_graph _ =
   try
     let l = Lexing.from_string entry#text in
     let r = Parser.main Lexer.token l in
-    let g = Place.circle_random (graph_of_raw r) in
-    let t = term_of_raw r in
-    let n = nterm_of_raw r in
+    let r = Raw.smap Info.draw_smapper r in
+    let t = S.term_of_raw r in
+    let n = S.nterm_of_raw r in
     Format.kasprintf label#set_label
       "Parsed term: %a\nPlain term: %a\nNormalised term: %a"
-      Raw.pp r
-      Term.pp t
-      NTerm.pp n;
+      (Raw.spp Sparse) r
+      (Term.spp Sparse) t
+      (NTerm.spp Sparse) n;
+    let g = S.graph_of_raw r in
+    Place.circle_random g;    
     graph#set g;
     active := `N;
     redraw()
@@ -155,11 +159,13 @@ let set_graph _ =
   
 let pointer() = p2_of_pointer da#misc#pointer
 
-let catch() = graph#find (Info.inside (pointer()))
+let catch() = graph#find (Geometry.inside (pointer()))
 
 let ivertex() =
-  let v = graph#add_ivertex (Info.for_ivertex (pointer())) in
-  redraw(); relabel "";
+  let v = Info.drawable_ivertex (pointer()) in
+  graph#add_ivertex v;
+  redraw();
+  relabel "";
   v
 
 let button_press e =
@@ -170,7 +176,7 @@ let button_press e =
                    | `N -> `C (!view_center, GdkEvent.Button.x e, GdkEvent.Button.y e))
   | `InsertEdge l ->
      match catch() with
-     | `V (v,_) -> mode := `InsertEdge (Seq.snoc l v)
+     | `V v -> mode := `InsertEdge (Seq.snoc l v)
      | `E _ -> ()
      | `N ->
         let v = ivertex() in
@@ -181,12 +187,14 @@ let button_release _ =
 
 let motion_notify e =
   match !active with
-  | `V (v,i) ->
-     Info.set_pos i (pointer());
-     Graph.iter_edges (fun e _ n -> if Seq.mem v n then Graph.Sourced.center_edge graph#sgraph e)
-       graph#graph;
+  | `V v ->
+     (graph#vinfo v)#move (pointer());
+     graph#iter_edges (fun e ->
+         if Seq.mem v (Graph.neighbours e) then
+           Place.center_edge graph#sgraph e
+       );
      redraw(); true
-  | `E (_,i) -> Info.set_pos i (pointer()); redraw(); true
+  | `E e -> (Graph.einfo e)#move (pointer()); redraw(); true
   | `C (vc0,x0,y0) ->
      view_center := V2.sub vc0
                       (v2_of_pointer_shift
@@ -204,40 +212,42 @@ let scroll e =
 
 let scale s =
   match catch() with
-  | `V (_,i)
-  | `E (_,i) -> Info.set_scale i (Info.scale i *. s); redraw()
+  | `V v -> (graph#vinfo v)#scale s; redraw()
+  | `E e -> (Graph.einfo e)#scale s; redraw()
   | `N -> ()
 
 let lift() =
-  graph#lift (Info.for_source (pointer()) (graph#arity+1)); redraw(); relabel ""
+  graph#lift (Info.drawable_source (graph#arity+1) (pointer())); redraw(); relabel ""
 
 let remove() =
   match catch() with
-  | `V (v,_) -> graph#rem_vertex v; redraw(); relabel ""
-  | `E (e,_) -> graph#rem_edge e; redraw(); relabel ""
+  | `V v -> graph#rem_vertex v; redraw(); relabel ""
+  | `E e -> graph#rem_edge e; redraw(); relabel ""
   | `N -> ()
 
 let promote() =
   match catch() with
-  | `V (Inn v,_) -> graph#promote v; redraw(); relabel ""
-  | `V (Src _,_) -> print_endline "cannot promote a source"
+  | `V (Inn v) -> graph#promote v; redraw(); relabel ""
+  | `V (Src _) -> print_endline "cannot promote a source"
   | `E _ -> print_endline "cannot promote an edge"
   | `N -> ()
 
 let forget() =
   match catch() with
-  | `V (Src i,_) -> graph#forget i; redraw(); relabel ""
-  | `V (Inn _,_) -> print_endline "cannot forget an inner vertex (use r to remove it)"
+  | `V (Src i) -> graph#forget i; redraw(); relabel ""
+  | `V (Inn _) -> print_endline "cannot forget an inner vertex (use r to remove it)"
   | `E _ -> print_endline "cannot forget an edge (use r to remove it)"
   | _ -> ()
 
 let edge l s =
-  ignore(graph#add_edge (Info.for_edge s (Seq.map graph#vinfo l)) l);
+  let e = Info.drawable_edge (Seq.size l) s in
+  let e = graph#add_edge e l in
+  Place.center_edge graph#sgraph e;
   redraw(); relabel ""
 
 let center() =
   match catch() with
-  | `E (e,_) -> Graph.Sourced.center_edge graph#sgraph e; redraw()
+  | `E e -> Place.center_edge graph#sgraph e; redraw()
   | _ ->  view_center := pointer()
   
 let key_press e =

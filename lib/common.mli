@@ -1,17 +1,11 @@
-type color = Gg.Color.t            (* colors *)
-type font = Vg.font             (* fonts *)
-type p2 = Gg.p2                 (* points *)
-type v2 = Gg.v2                 (* vectors *)
-type path = Vg.path             (* paths *)
-type image = Vg.image           (* images  *)
+open Misc
 
 type 'a seq = 'a Seq.t          (* sequences (with index starting at 1) *)
 type 'a set = 'a Set.t          (* (multi) sets *)
-type label = string             (* edge labels *)
 type perm = Perm.t              (* finite support permutations *)
 type inj = Inj.t                (* finite support injections *)
 type iseq = ISeq.t              (* increasing sequences *)
-type info = Info.t              (* edge/vertex information *)
+type kvl = Info.kvl             (* edge/vertex information *)
 
 (* algebras giving the operations described in the paper *)
 module type ALGEBRA = sig
@@ -27,13 +21,10 @@ module type ALGEBRA = sig
   val isize: 'a t -> int        (* number of inner vertices) *)
   val esize: 'a t -> int        (* number of edges *)
   
-  val map:
-    fi:('a -> 'b) -> (* inner vertices *)
-    fe:('a -> 'b) -> (* edges *)
-    'a t -> 'b t
+  val map: ('a,'b) mapper -> 'a t -> 'b t
   
-  (* pretty printing (with full infos or only edge labels) *)
-  val pp_: ?full:bool -> Format.formatter -> info t -> unit
+  (* pretty printing *)
+  val pp: pp_mode -> Format.formatter -> #printable t -> unit
 end
 
 (* derived operations *)
@@ -58,10 +49,18 @@ module type EALGEBRA = sig
   (* arity + isize + esize *)
   val size: 'a t -> int
 
-  (* pretty printing (with full infos or only edge labels) *)
-  val pp: Format.formatter -> info t -> unit
-  val pp_full: Format.formatter -> info t -> unit
+  (* sourced elements *)
+  type 'a st = 'a seq * 'a t
+  val ssize: 'a st -> int
+  val spp: pp_mode -> Format.formatter -> #printable st -> unit
+  val smap: ('a,'b) smapper -> 'a st -> 'b st
 end
+
+val spp:
+  (pp_mode -> Format.formatter -> 'b -> unit) ->
+  arity:('b -> int) ->
+  pp_mode -> Format.formatter -> #printable seq * 'b -> unit
+  
 
 (* derived operations are derivable... *)
 module Extend(M: ALGEBRA): EALGEBRA with type 'a t = 'a M.t
@@ -71,5 +70,6 @@ module type INITIAL_ALGEBRA = sig
   include EALGEBRA
   module INIT(M: EALGEBRA): sig
     val eval: 'a t -> 'a M.t
+    val seval: 'a st -> 'a M.st
   end
 end

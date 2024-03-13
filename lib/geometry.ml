@@ -11,6 +11,9 @@ let random2 s =
 (** distance *)
 let dist p q = V2.norm (V2.sub p q)
 
+(** is a point inside a drawable element *)
+let inside p x = dist p x#pos <= x#radius
+
 (** barycenter of a triangle *)
 let center = function
   | [] -> V2.zero

@@ -1,14 +1,21 @@
-type 'a raw = 'a Raw.t
-type 'a term = 'a Term.t
-type 'a nterm = 'a NTerm.t
-type 'a graph = 'a Graph.t
+val term_of_raw: 'a Raw.t -> 'a Term.t
+val nterm_of_raw: 'a Raw.t -> 'a NTerm.t
+val graph_of_raw: 'a Raw.t -> 'a Graph.t
+val graph_of_term: 'a Term.t -> 'a Graph.t
+val graph_of_nterm: 'a NTerm.t -> 'a Graph.t
+val normalise: 'a Term.t -> 'a NTerm.t
 
-val term_of_raw: 'a raw -> 'a term
-val nterm_of_raw: 'a raw -> 'a nterm
-val graph_of_raw: 'a raw -> 'a graph
-val graph_of_term: 'a term -> 'a graph
-val graph_of_nterm: 'a nterm -> 'a graph
-val normalise: 'a term -> 'a nterm
+val raw_of_graph: 'a Graph.t -> 'a Raw.t
+val term_of_graph: 'a Graph.t -> 'a Term.t
 
-val raw_of_graph: 'a graph -> 'a raw
-val term_of_graph: 'a graph -> 'a term
+module S: sig
+val term_of_raw: 'a Raw.st -> 'a Term.st
+val nterm_of_raw: 'a Raw.st -> 'a NTerm.st
+val graph_of_raw: 'a Raw.st -> 'a Graph.st
+val graph_of_term: 'a Term.st -> 'a Graph.st
+val graph_of_nterm: 'a NTerm.st -> 'a Graph.st
+val normalise: 'a Term.st -> 'a NTerm.st
+
+val raw_of_graph: 'a Graph.st -> 'a Raw.st
+val term_of_graph: 'a Graph.st -> 'a Term.st
+end
