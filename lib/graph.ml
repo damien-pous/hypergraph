@@ -1,5 +1,5 @@
+open Types
 open Misc
-open Common
 
 type 'a vertex = Src of int | Inn of 'a
 let src i = Src i
@@ -16,20 +16,37 @@ let nomap f = Set.map (fun e -> { e with neighbours = Seq.omap f e.neighbours })
 let nmap f = Set.map (fun e -> { e with neighbours = Seq.map f e.neighbours })
 let nfilter f = nomap (fun v -> if f v then Some v else None)
 
-module M = struct
+module U0 = struct
 type 'a t = {
     arity: int;
     ivertices: 'a set;
     edges: 'a edge set;
   }
-let arity g = g.arity
-let edges g = g.edges
+type ('a,'b) m = ('a,'b) umapper
 
+let arity g = g.arity
 let isize g = Set.size g.ivertices
 let esize g = Set.size g.edges
+let width _ = failwith "todo"
 
+let edges g = g.edges
 let iter_ivertices f g = Set.iter f g.ivertices
+let iter_edges'' f g = Set.iter (fun e -> f e e.einfo e.neighbours) g.edges
+let iter_edges' f g = Set.iter (fun e -> f e) g.edges
 let iter_edges f g = Set.iter (fun e -> f e.einfo e.neighbours) g.edges
+
+let pp_dot mode f g =
+  let ppv f = function
+  | Src i -> Format.fprintf f "%i" i
+  | Inn x -> Format.fprintf f "i%i" (Set.index x g.ivertices)
+  in
+  Set.iteri (fun id x -> Format.fprintf f "i%i %t\n" id (x#pp mode)) g.ivertices;
+  Set.iteri (fun id x ->
+      Format.fprintf f "e%i %t\n" id (x.einfo#pp mode);
+        Seq.iter (fun i v ->
+          Format.fprintf f "e%i -- %a [label=%i]\n" id ppv v i
+        ) x.neighbours
+    ) g.edges
 
 let nil arity =
   { arity; ivertices = Set.empty; edges = Set.empty }
@@ -75,55 +92,59 @@ let map f g =
     edges = Set.map (fun x -> { einfo = f.fe x.einfo;
                                 neighbours = Seq.map (vmap f.fi) x.neighbours }) g.edges }
 
-let pp mode f g =
-  let ppv f = function
-  | Src i -> Format.fprintf f "%i" i
-  | Inn x -> Format.fprintf f "i%i" (Set.index x g.ivertices)
-  in
-  Set.iteri (fun id x -> Format.fprintf f "i%i %t\n" id (x#pp mode)) g.ivertices;
-  Set.iteri (fun id x ->
-      Format.fprintf f "e%i %t\n" id (x.einfo#pp mode);
-        Seq.iter (fun i v ->
-          Format.fprintf f "e%i -- %a [label=%i]\n" id ppv v i
-        ) x.neighbours
-    ) g.edges
+let add_edge einfo neighbours g =
+  let e = {einfo;neighbours} in
+  e,{ g with edges = Set.add e g.edges }
 
-end
-include M
-include Extend(M)
-type 'a graph = 'a t
-type 'a sgraph = 'a st
+let rem_edge e g =
+  { g with edges = Set.remq e g.edges }
 
-let sinfo (s,_) = Seq.get s 
-let vinfo (s,_) = function
-  | Src i -> Seq.get s i
-  | Inn x ->  x
-let iter_sources f (s,_) = Seq.iter f s
-let iter_vertices f (_,g as sg) =
-  iter_sources (fun i _ -> f (src i)) sg;
-  iter_ivertices (fun i -> f (inn i)) g
+let add_ivertex v g =
+  { g with ivertices = Set.add v g.ivertices }
 
+let rem_ivertex v g =
+  { g with
+    ivertices = Set.remq v g.ivertices;
+    edges = nfilter
+              (function
+               | Inn w when v == w -> false
+               | _ -> true)
+              g.edges }
 
-module INIT(M: EALGEBRA) = struct
-  let eval g =
-    let k = arity g in
-    let v = isize g in
-    let k' = k + v in
-    let idx = function
-      | Src i -> i
-      | Inn x -> k + Set.index x g.ivertices (* or reversed, if Set.fold changes *)
-    in
-    let u =
-      Set.fold (fun e ->
-          let e,n = e.einfo, e.neighbours in
-          M.par
-            (M.inj k' (Inj.of_list (List.map idx (Seq.to_list n)))
-               (M.edg (Seq.size n) e)))
-        (M.nil k') g.edges
-    in
-    Set.fold M.fgt u g.ivertices
-  let seval (s,g) = s,eval g
-end
+let rem_last_source g =
+  let k = g.arity in
+  if k = 0 then failwith "no source to remove";
+  { g with
+    arity = k - 1;
+    edges = nomap
+              (function
+               | Src i when i = k -> None
+               | v -> Some v)
+              g.edges }
+let rem_source i g =
+  let k = g.arity in
+  if i>k then failwith "rem_source: not a valid source"
+  else if i=k then rem_last_source g
+  else rem_last_source (prm (Perm.of_cycle [i;k]) g)
+
+let rem_vertex = function
+  | Src i -> rem_source i
+  | Inn x -> rem_ivertex x
+
+let promote x g =
+  let arity = g.arity+1 in
+  { arity; ivertices = Set.remq x g.ivertices;
+    edges = nmap
+              (function
+               | Inn y when x == y -> src arity
+               | v -> v)
+              g.edges }
+
+let forget i x g =
+  let k = g.arity in
+  if i>k then failwith "forget: not a valid source"
+  else if i=k then fgt x g
+  else fgt x (prm (Perm.of_cycle [i;k]) g)
 
 (* checking isomorphism
    naively for now: just try to match edges in all possible ways *)
@@ -168,115 +189,97 @@ let iso cmp g h =
       esize g = esize h &&
         iso (edges g) (edges h) Set.empty
 
-let siso cmp (_,g) (_,h) = iso cmp g h
-
-class ['a] dynamic = 
-  object(self)
-    val mutable sources = Seq.empty
-    val mutable graph = nil 0
-    method set (s,g) =
-      assert (Seq.size sources = arity graph);
-      sources <- s; graph <- g
-
-    method sources = sources
-    method graph = graph
-    method sgraph = sources,graph
-    method arity = arity graph
-
-    method sinfo = Seq.get sources
-    method vinfo = vinfo (sources,graph)
-
-    method iter_edges f =
-      Set.iter f self#graph.edges
-    method iter_sources f =
-      Seq.iter f sources;
-    method iter_ivertices f =
-      iter_ivertices f graph
-    method iter_vertices f =
-      self#iter_sources (fun i _ -> f (src i));
-      self#iter_ivertices (fun i -> f (inn i));         
-    method iter_infos f =
-      self#iter_sources (fun _ -> f);
-      self#iter_ivertices f;         
-      self#iter_edges (fun x -> f x.einfo)
-
-    method lift v =
-      sources <- Seq.snoc sources v;
-      graph <- lft graph
-
-    method permute p =
-      sources <- Perm.sapply p sources;
-      graph <- prm p graph
-        
-    method add_edge einfo neighbours =
-      let e = {einfo;neighbours} in
-      graph <- { graph with edges = Set.add e graph.edges };
-      e
-    method add_ivertex i =
-      graph <- { graph with ivertices = Set.add i graph.ivertices }
-    method rem_edge e =
-      graph <- { graph with edges = Set.remq e graph.edges }
-    method rem_ivertex x =
-      graph <- { graph with
-                 ivertices = Set.remq x graph.ivertices;
-                 edges = nfilter
-                           (function
-                            | Inn y when x == y -> false
-                            | _ -> true)
-                           graph.edges }
-    method private rem_last_source =
-      match Seq.case sources with
-      | None -> failwith "no source to remove"
-      | Some (q,_) ->
-         sources <- q;
-         graph <- { graph with
-                    arity = graph.arity - 1;
-                    edges = nomap
-                              (function
-                               | Src i when i = graph.arity -> None
-                               | v -> Some v)
-                              graph.edges }
-    method rem_source i =
-      let k = graph.arity in
-      if i>k then failwith "rem_source: not a valid source"
-      else if i=k then self#rem_last_source
-      else (self#permute (Perm.of_cycle [i;k]); self#rem_last_source)
-    method rem_vertex = function
-        | Src i -> self#rem_source i
-        | Inn x -> self#rem_ivertex x
-
-    method promote x =
-      let arity = graph.arity+1 in
-      sources <- Seq.snoc sources x;
-      graph <- { arity;
-                 ivertices = Set.remq x graph.ivertices;
-                 edges = nmap
-                           (function
-                            | Inn y when x == y -> src arity
-                            | v -> v)
-                           graph.edges }
-    
-    method private forget_last =
-      match Seq.case sources with
-      | None -> failwith "fgt: no source to forget"
-      | Some (q,v) ->
-         sources <- q;
-         graph <- fgt v graph
-    method forget i =
-      let k = graph.arity in
-      if i>k then failwith "forget: not a valid source"
-      else if i=k then self#forget_last
-      else (self#permute (Perm.of_cycle [i;k]); self#forget_last)
-
-    method find f: [`V of 'a vertex | `E of 'a edge | `N] =
-      let r = ref `N in
-      try
-        self#iter_vertices (fun v -> if f (self#vinfo v) then (r := `V v; raise Not_found));
-        self#iter_edges (fun e -> if f e.einfo then (r := `E e; raise Not_found));
-        `N
-      with Not_found -> !r
-
+end
+module U1 = struct
+  include U0
+  include Functor.E(U0)
+  module I(M: EALGEBRA) = struct
+    let eval g =
+      let k = arity g in
+      let v = isize g in
+      let k' = k + v in
+      let idx = function
+        | Src i -> i
+        | Inn x -> k + Set.index x g.ivertices (* or reversed, if Set.fold changes *)
+      in
+      let u =
+        Set.fold (fun e ->
+            let e,n = e.einfo, e.neighbours in
+            M.par
+              (M.inj k' (Inj.of_list (List.map idx (Seq.to_list n)))
+                 (M.edg (Seq.size n) e)))
+          (M.nil k') g.edges
+      in
+      Set.fold M.fgt u g.ivertices
   end
+end
+include Functor.S(U1)
+module U = struct include U0 include U1 include U end
+type 'a graph = 'a t
+type 'a ugraph = 'a u
+
+let sinfo (s,_) = Seq.get s 
+let vinfo (s,_) = function
+  | Src i -> Seq.get s i
+  | Inn x ->  x
+let iter_edges f (_,g) = U.iter_edges f g
+let iter_edges' f (_,g) = U.iter_edges' f g
+let iter_edges'' f (_,g) = U.iter_edges'' f g
+let iter_ivertices f (_,g) = U.iter_ivertices f g
+let iter_sources f (s,_) = Seq.iter f s
+let iter_vertices f g =
+  iter_sources (fun i _ -> f (src i)) g;
+  iter_ivertices (fun i -> f (inn i)) g
+let iter_infos f g =
+  iter_sources (fun _ -> f) g;
+  iter_ivertices f g;         
+  iter_edges (fun e _ -> f e) g
+
+let nil () = (Seq.empty, U.nil 0)
+let lft x (s,g) = (Seq.snoc s x, U.lft g)
+let fgt (s,g) = 
+  match Seq.case s with
+  | None -> failwith "no source to forget"
+  | Some (s,x) -> (s,U.fgt x g)
+let prm p (s,g) = (Perm.sapply p s, U.prm p g)
+let add_edge e n (s,g) = let e,g = U.add_edge e n g in e,(s,g)
+let rem_edge e (s,g) = (s,U.rem_edge e g)
+let add_ivertex v (s,g) = (s,U.add_ivertex v g)
+let rem_ivertex v (s,g) = (s,U.rem_ivertex v g)
+let rem_last_source (s,g) =
+  match Seq.case s with
+  | None -> failwith "no source to remove"
+  | Some (s,_) -> (s,U.rem_last_source g)
+let rem_source i g =
+  let k = arity g in
+  if i>k then failwith "rem_source: not a valid source"
+  else if i=k then rem_last_source g
+  else rem_last_source (prm (Perm.of_cycle [i;k]) g)
+let rem_vertex = function
+  | Src i -> rem_source i
+  | Inn x -> rem_ivertex x
+let promote x (s,g) = (Seq.snoc s x, U.promote x g)
+let forget i g =
+  let k = arity g in
+  if i>k then failwith "forget: not a valid source"
+  else if i=k then fgt g
+  else fgt (prm (Perm.of_cycle [i;k]) g)
+
+let iso cmp (_,g) (_,h) = U.iso cmp g h
+
+let find f g =
+  let r = ref `N in
+  try
+    iter_vertices (fun v -> if f (vinfo g v) then (r := `V v; raise Not_found)) g;
+    iter_edges'' (fun e x _ -> if f x then (r := `E e; raise Not_found)) g;
+    `N
+  with Not_found -> !r
+
+let pp_dot mode f (s,g) =
+  Format.fprintf f "graph {\n";
+  Seq.iter (fun i x -> Format.fprintf f "%i %t\n" i (x#pp mode)) s;
+  U.pp_dot mode f g;
+  Format.fprintf f "}\n"
 
 (* let export_gen cmd print file g = *)
 (*   let o = Unix.open_process_out (cmd^" > "^file) in *)

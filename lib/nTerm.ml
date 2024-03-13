@@ -1,5 +1,4 @@
-open Misc
-open Common
+open Types
 
 type 'a s = int * (iseq * 'a fpt) set
 and 'a fpt =
@@ -8,22 +7,10 @@ and 'a fpt =
 
 let ismap f = Set.map (fun (i,x) -> i,f x)
 
-module INIT(X: EALGEBRA) = struct
-  let rec eval (k,s) =
-    X.bigpar k (Set.lmap (fun (i,x) -> X.inj k (ISeq.to_inj i) (fp_eval x)) s)
-  and fp_eval = function
-    | Fgt(x,u) -> X.fgt x (eval u)
-    | Edg(k,p,x) -> X.prm p (X.edg k x)
-  let seval (s,u) = (s,eval u)
-end
-
-let raw u = let module I = INIT(Raw) in I.eval u
-let sraw u = let module I = INIT(Raw) in I.seval u 
-
 module M = struct
-type 'a t = 'a s
 
-let pp mode f u = Raw.pp mode f (raw u)
+type 'a t = 'a s
+type ('a,'b) m = ('a,'b) umapper
 
 let arity (k,_) = k
 (* let fp_arity = function *)
@@ -79,6 +66,12 @@ let map f =
     | Edg(k,p,x) -> Edg(k,p,f.fe x)
   in map
 
+module I(X: EALGEBRA) = struct
+  let rec eval (k,s) =
+    X.bigpar k (Set.lmap (fun (i,x) -> X.inj k (ISeq.to_inj i) (fp_eval x)) s)
+  and fp_eval = function
+    | Fgt(x,u) -> X.fgt x (eval u)
+    | Edg(k,p,x) -> X.prm p (X.edg k x)
 end
-include M
-include Extend(M)
+
+end include Functor.S(M)

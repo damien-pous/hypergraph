@@ -1,0 +1,9 @@
+Raw:  directly ISALGEBRA
+
+(N)Term: INIT, ALGEBRA --X--> ISALGEBRA
+	
+Graph: ALGEBRA --E--> EALGEBRA
+                      INIT      --S--> ISALGEBRA
+
+
+

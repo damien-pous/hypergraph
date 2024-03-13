@@ -1,5 +1,4 @@
-open Misc
-open Common
+open Types
 
 type 'a s =
   | Nil of int
@@ -10,7 +9,9 @@ type 'a s =
   | Edg of int * 'a
 
 module M = struct
+    
 type 'a t = 'a s
+type ('a,'b) m = ('a,'b) umapper
 
 let rec arity = function
   | Nil k | Edg(k,_) -> k
@@ -46,8 +47,6 @@ let lft u = Lft u
 let prm p u = Prm(p,u)
 let edg k x = Edg(k,x)
 
-let pp _ _ _ = assert false (* derived below *)
-
 let map f =
   let rec map = function
     | Nil k    -> nil k
@@ -58,11 +57,7 @@ let map f =
     | Edg(k,l) -> edg k (f.fe l)
   in map
 
-end
-include M
-include Extend(M)
-
-module INIT(X: ALGEBRA) = struct
+module I(X: ALGEBRA) = struct
   let rec eval = function
     | Nil k    -> X.nil k
     | Par(u,v) -> X.par (eval u) (eval v)
@@ -70,10 +65,7 @@ module INIT(X: ALGEBRA) = struct
     | Lft u    -> X.lft (eval u)
     | Prm(p,u) -> X.prm p (eval u)
     | Edg(k,l) -> X.edg k l
-  let seval (s,u) = (s,eval u)
 end
 
-let raw u = let module I = INIT(Raw) in I.eval u
-let sraw u = let module I = INIT(Raw) in I.seval u 
-let pp mode f u = Raw.pp mode f (raw u)
-let spp mode f u = Raw.spp mode f (sraw u)
+end
+include Functor.S(M)

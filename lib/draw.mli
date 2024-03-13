@@ -1,4 +1,4 @@
-open Misc
+open Types
 open Graph
 
-val graph: #drawable sgraph -> Vg.image
+val graph: #drawable graph -> image

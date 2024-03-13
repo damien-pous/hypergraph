@@ -1,7 +1,7 @@
-open Common
+open Types
 open Misc
 
-type 'a s =
+type 'a s = 
   | Nil
   | Par of 'a s * 'a s
   | Fgt of 'a * 'a s
@@ -14,8 +14,13 @@ type 'a s =
   | Str of 'a * 'a s list
   | Dot of 'a * 'a s * 'a s
   | Cnv of 'a s
+type 'a u = 'a s
+type 'a ru = 'a u
+
+module U = struct
 type 'a t = 'a s
-type 'a st = 'a seq * 'a t
+type 'a r = 'a t
+type ('a,'b) m = ('a,'b) umapper  
 
 let nil' = Nil
 let nil _ = nil'
@@ -93,9 +98,6 @@ let arity,source =
   in
   (fun u -> fst (arity u)), (fun s u -> ignore (max (strict (Seq.size s)) (arity u)); (s,u))
 
-let fix f k = source (Seq.init k f)
-let flex f u = let k = arity u in fix f k u
-
 let rec isize = function
   | Nil | Edg _ -> 0
   | Par(u,v)  | Dot(_,u,v) -> isize u + isize v
@@ -112,23 +114,23 @@ let rec esize = function
   | Fgt(_,u) | Lft u | Prm(_,u) | Inj(_,u) | Cnv u -> esize u
     
 let size g = arity g + isize g + esize g
-let ssize (_,g) = size g
 
-module INIT(X: EALGEBRA) = struct
-  let rec eval k = function
+let width _ = assert false      (* not useful raw terms? *)
+
+module I(X: EALGEBRA) = struct
+  let rec xeval k = function
     | Nil        -> X.nil k
-    | Par(u,v)   -> X.par (eval k u) (eval k v)
-    | Fgt(x,u)   -> X.fgt x (eval (k+1) u)
-    | Lft u      -> X.lft (eval (k-1) u)
-    | Prm(p,u)   -> X.prm p (eval k u)
+    | Par(u,v)   -> X.par (xeval k u) (xeval k v)
+    | Fgt(x,u)   -> X.fgt x (xeval (k+1) u)
+    | Lft u      -> X.lft (xeval (k-1) u)
+    | Prm(p,u)   -> X.prm p (xeval k u)
     | Edg l      -> X.edg k l
-    | Inj(i,u)   -> X.inj k i (eval (Inj.dom i) u)
-    | Ser l      -> X.ser (List.map (eval (k-1)) l)
-    | Str(x,l)   -> X.str x (List.map (eval 2) l)
-    | Dot(x,u,v) -> X.dot x (eval 2 u) (eval 2 v)
-    | Cnv u      -> X.cnv (eval k u)
-  let seval (s,u) = (s,eval (Seq.size s) u)
-  let eval u = eval (arity u) u
+    | Inj(i,u)   -> X.inj k i (xeval (Inj.dom i) u)
+    | Ser l      -> X.ser (List.map (xeval (k-1)) l)
+    | Str(x,l)   -> X.str x (List.map (xeval 2) l)
+    | Dot(x,u,v) -> X.dot x (xeval 2 u) (xeval 2 v)
+    | Cnv u      -> X.cnv (xeval k u)
+  let eval u = xeval (arity u) u
 end
 
 let map f =
@@ -180,5 +182,39 @@ let pp mode =
     | Cnv u      -> Format.fprintf f (paren "%a'") pp u
 in pp BOT
 
-let spp mode f x = spp pp ~arity mode f x
-let smap f (s,u) = (Seq.imap f.fs s, map f.fo u)
+let raw u = u
+end
+let nil' = U.nil'
+let edg' = U.edg'
+let inj' = U.inj'
+
+type 'a t = 'a seq * 'a u
+type 'a rt = 'a t
+type ('a,'b) m = ('a,'b) mapper
+
+let arity (s,_) = Seq.size s
+let isize (_,u) = U.isize u
+let esize (_,u) = U.esize u
+let width _ = assert false      (* not useful on raw terms? *)
+let size g = arity g + isize g + esize g (* warning: possibly different from [U.size (snd g)] *)
+
+let source = U.source
+let flexible f u = let k = U.arity u in source (Seq.init k f) u
+
+let map f (s,u) = (Seq.imap f.fs s, U.map f.fu u)
+
+let pp mode f (s,u) =
+  if mode=Sparse || Seq.forall (fun s -> s#pp_empty mode) s then
+    let k = Seq.size s in
+    if U.arity u = k then U.pp mode f u
+    else Format.fprintf f "#%i %a" k (U.pp mode) u
+  else
+    let ppx f x = x#pp mode f in
+    Format.fprintf f "#%a %a" (pp_print_list "," ppx) (Seq.to_list s) (U.pp mode) u
+
+let raw u = u
+
+module SI(X:SEALGEBRA) = struct
+  module UI = U.I(X.U)
+  let eval (s,u) = X.source s (UI.xeval (Seq.size s) u)
+end

@@ -1,6 +1,4 @@
-open Gg
-open Vg
-open Misc
+open Types
 
 (* random point in [-s;s]x[-s;s] *)
 val random2: float -> p2

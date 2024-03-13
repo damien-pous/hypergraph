@@ -10,7 +10,7 @@ open Vg
 (* sanity checks *)
 (* open Sanity *)
 
-let graph = new Graph.dynamic
+let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
 let view_center = ref V2.zero
@@ -85,7 +85,7 @@ let render () =
           (y -. te.height /. 2. -. te.y_bearing);
         Cairo.show_text cr s
       in
-      graph#iter_infos (fun x -> text x#pos x#text)
+      Graph.iter_infos (fun x -> text x#pos x#label) !graph
     end;
   da#misc#draw None
 
@@ -120,20 +120,20 @@ let export_svg() =
   print_endline "exported to test.svg"
 
 (* recomputing the picture and rendering it *)
-let redraw() = picture := Draw.graph graph#sgraph; render()
+let redraw() = picture := Draw.graph !graph; render()
 
 let relabel msg =
-  let g = graph#sgraph in
-  let t = S.raw_of_graph g in
-  let n = S.normalise (S.term_of_raw t) in
+  let g = !graph in
+  let t = raw_of_graph g in
+  let n = normalise (term_of_raw t) in
   Format.kasprintf label#set_label
     "%sExtracted term: %a\nNormalised term: %a" msg
-    (Raw.spp Sparse) t (NTerm.spp Sparse) n;
-  let _ = Graph.siso same_label g (S.graph_of_raw t) ||
-            (Format.eprintf "%a" (Graph.spp Sparse) g;
+    (Raw.pp Sparse) t (NTerm.pp Sparse) n;
+  let _ = Graph.iso Info.same_label g (graph_of_raw t) ||
+            (Format.eprintf "%a" (Graph.pp Sparse) g;
              failwith "Mismatch between graph and extracted term")
   in
-  let _ = Graph.siso same_label g (S.graph_of_nterm n) ||
+  let _ = Graph.iso Info.same_label g (graph_of_nterm n) ||
             failwith "Mismatch between graph and normalised term"
   in
   ()
@@ -142,28 +142,28 @@ let set_graph _ =
   try
     let l = Lexing.from_string entry#text in
     let r = Parser.main Lexer.token l in
-    let r = Raw.smap Info.draw_smapper r in
-    let t = S.term_of_raw r in
-    let n = S.nterm_of_raw r in
+    let r = Raw.map Info.draw_mapper r in
+    let t = term_of_raw r in
+    let n = nterm_of_raw r in
     Format.kasprintf label#set_label
       "Parsed term: %a\nPlain term: %a\nNormalised term: %a"
-      (Raw.spp Sparse) r
-      (Term.spp Sparse) t
-      (NTerm.spp Sparse) n;
-    let g = S.graph_of_raw r in
+      (Raw.pp Sparse) r
+      (Term.pp Sparse) t
+      (NTerm.pp Sparse) n;
+    let g = graph_of_raw r in
     Place.circle_random g;    
-    graph#set g;
+    graph := g;
     active := `N;
     redraw()
   with e -> relabel "Parsing error\n"; raise e
   
 let pointer() = p2_of_pointer da#misc#pointer
 
-let catch() = graph#find (Geometry.inside (pointer()))
+let catch() = Graph.find (Geometry.inside (pointer())) !graph
 
 let ivertex() =
   let v = Info.drawable_ivertex (pointer()) in
-  graph#add_ivertex v;
+  graph := Graph.add_ivertex v !graph;
   redraw();
   relabel "";
   v
@@ -188,11 +188,8 @@ let button_release _ =
 let motion_notify e =
   match !active with
   | `V v ->
-     (graph#vinfo v)#move (pointer());
-     graph#iter_edges (fun e ->
-         if Seq.mem v (Graph.neighbours e) then
-           Place.center_edge graph#sgraph e
-       );
+     (Graph.vinfo !graph v)#move (pointer());
+     Graph.iter_edges'' (fun e _ n-> if Seq.mem v n then Place.center_edge !graph e) !graph;
      redraw(); true
   | `E e -> (Graph.einfo e)#move (pointer()); redraw(); true
   | `C (vc0,x0,y0) ->
@@ -212,42 +209,44 @@ let scroll e =
 
 let scale s =
   match catch() with
-  | `V v -> (graph#vinfo v)#scale s; redraw()
+  | `V v -> (Graph.vinfo !graph v)#scale s; redraw()
   | `E e -> (Graph.einfo e)#scale s; redraw()
   | `N -> ()
 
 let lift() =
-  graph#lift (Info.drawable_source (graph#arity+1) (pointer())); redraw(); relabel ""
+  graph := Graph.lft (Info.drawable_source (Graph.arity !graph+1) (pointer())) !graph;
+  redraw(); relabel ""
 
 let remove() =
   match catch() with
-  | `V v -> graph#rem_vertex v; redraw(); relabel ""
-  | `E e -> graph#rem_edge e; redraw(); relabel ""
+  | `V v -> graph := Graph.rem_vertex v !graph; redraw(); relabel ""
+  | `E e -> graph := Graph.rem_edge e !graph; redraw(); relabel ""
   | `N -> ()
 
 let promote() =
   match catch() with
-  | `V (Inn v) -> graph#promote v; redraw(); relabel ""
+  | `V (Inn v) -> graph := Graph.promote v !graph; redraw(); relabel ""
   | `V (Src _) -> print_endline "cannot promote a source"
   | `E _ -> print_endline "cannot promote an edge"
   | `N -> ()
 
 let forget() =
   match catch() with
-  | `V (Src i) -> graph#forget i; redraw(); relabel ""
+  | `V (Src i) -> graph := Graph.forget i !graph; redraw(); relabel ""
   | `V (Inn _) -> print_endline "cannot forget an inner vertex (use r to remove it)"
   | `E _ -> print_endline "cannot forget an edge (use r to remove it)"
   | _ -> ()
 
 let edge l s =
   let e = Info.drawable_edge (Seq.size l) s in
-  let e = graph#add_edge e l in
-  Place.center_edge graph#sgraph e;
+  let e,g = Graph.add_edge e l !graph in
+  graph := g;
+  Place.center_edge g e;
   redraw(); relabel ""
 
 let center() =
   match catch() with
-  | `E e -> Place.center_edge graph#sgraph e; redraw()
+  | `E e -> Place.center_edge !graph e; redraw()
   | _ ->  view_center := pointer()
   
 let key_press e =

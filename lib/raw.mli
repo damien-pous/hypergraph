@@ -1,4 +1,4 @@
-open Common
+open Types
 
 type 'a s = private
   | Nil
@@ -14,12 +14,10 @@ type 'a s = private
   | Dot of 'a * 'a s * 'a s
   | Cnv of 'a s
 
-include INITIAL_ALGEBRA with type 'a t = 'a s
+include ISEALGEBRA with type 'a u = 'a s
 
-val nil': 'a t
-val inj': inj -> 'a t -> 'a t
-val edg': 'a -> 'a t
+val nil': 'a u
+val inj': inj -> 'a u -> 'a u
+val edg': 'a -> 'a u
 
-val fix: (int -> 'a) -> int -> 'a t -> 'a st
-val flex: (int -> 'a) -> 'a t -> 'a st
-val source: 'a seq -> 'a t -> 'a st
+val flexible: (int -> 'a) -> 'a u -> 'a t

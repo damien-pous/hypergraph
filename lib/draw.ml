@@ -1,11 +1,10 @@
-open Misc
+open Types
 open Graph
 open Gg
 open Vg
 
-let graph (sg: #drawable sgraph) =
-  let _,g = sg in
-  let npos = Seq.lmap (fun v -> (vinfo sg v)#pos) in
+let graph (g: #drawable graph) =
+  let npos = Seq.lmap (fun v -> (vinfo g v)#pos) in
   let drawing = ref I.void in
   let blend d = drawing := !drawing |> I.blend d in
   let area = `O { P.o with P.width = Constants.linewidth } in
@@ -33,7 +32,7 @@ let graph (sg: #drawable sgraph) =
     let r = x#radius in
     let c = x#color in
     surface ~c (P.empty |> P.circle p r);
-    text p x#text
+    text p x#label
   in
   let draw_edge x n =
     let p = x#pos in
@@ -41,9 +40,9 @@ let graph (sg: #drawable sgraph) =
     let c = x#color in
     surface ~c (Geometry.edge (Geometry.circle p r) (npos n));
     circle p r;
-    text p x#text
+    text p x#label
   in
   iter_edges draw_edge g;
-  iter_sources draw_source sg;
+  iter_sources draw_source g;
   iter_ivertices draw_ivertex g;
   !drawing

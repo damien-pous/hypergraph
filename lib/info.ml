@@ -1,4 +1,5 @@
 open Gg
+open Types
 open Misc
 
 type kv = string*string
@@ -27,6 +28,9 @@ let kv k v =
 let get_color l = Option.map Constants.color (List.assoc_opt "color" l)
 let get_label l = Option.value ~default:"" (List.assoc_opt "label" l)
 
+let same_label x y = x#label = y#label
+let same_label_kvl x y = get_label x = get_label y
+
 let pp_kvl f l =
   if l<>[] then
     Format.fprintf f "<%a>"
@@ -39,6 +43,7 @@ let forbidden s =
 let pp_label f = function
   | s when forbidden s -> Format.fprintf f "-%s" s
   | s -> Format.pp_print_string f s
+
 
 class virtual holder_ = 
   object
@@ -63,7 +68,7 @@ class virtual printer =
   object(self)
     inherit holder_
     val mutable label = ""
-    method text = label
+    method label = label
     method virtual private pp_label: pp_mode -> Format.formatter -> unit
     method virtual private pp_other: pp_mode -> Format.formatter -> unit
     method private update_kvl = ()
@@ -101,8 +106,8 @@ class virtual eprinter_ =
   end
 class eprinter l = object inherit holder l inherit eprinter_ end
 
-let print_mapper = {fi=new iprinter;fe=new eprinter}
-let print_smapper = {fs=new sprinter;fo=print_mapper}
+let print_umapper = {fi=new iprinter;fe=new eprinter}
+let print_mapper = {fs=new sprinter;fu=print_umapper}
 
 
 class virtual draw =
@@ -158,8 +163,8 @@ class edrawer l =
         (match self#get "shift" with Some v -> pos <- p2_of_string v | None -> ());
   end
 
-let draw_mapper = {fi=new idrawer;fe=new edrawer}
-let draw_smapper = {fs=new sdrawer;fo=draw_mapper}
+let draw_umapper = {fi=new idrawer;fe=new edrawer}
+let draw_mapper = {fs=new sdrawer;fu=draw_umapper}
 
 
 let drawable_ivertex p = new idrawer ["pos", string_of_p2 p]

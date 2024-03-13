@@ -1,10 +1,9 @@
 open Gg
 open Graph
 
-let npos sg = Seq.lmap (fun v -> (vinfo sg v)#pos)
+let npos g = Seq.lmap (fun v -> (vinfo g v)#pos)
 
-let circle_random sg =
-  let _,g = sg in
+let circle_random g =
   let k = arity g in
   let n = size g in
   let s = sqrt (float_of_int n) /. 2. in
@@ -15,11 +14,11 @@ let circle_random sg =
            2. *. Float.pi *. float_of_int (i-1) /. float_of_int k
            -. Float.pi_div_2 -. Float.pi /. float_of_int k))
   in
-  iter_sources (fun i s -> if not s#placed then s#move (spos i)) sg;
+  iter_sources (fun i s -> if not s#placed then s#move (spos i)) g;
   iter_ivertices (fun x -> if not x#placed then x#move (Geometry.random2 s)) g;
   iter_edges (fun e n -> 
       if not e#placed then
-        let c = Geometry.center (npos sg n) in
+        let c = Geometry.center (npos g n) in
         let shift = e#pos in    (* position used as shift if not placed *)
         let radius = e#radius in
         let pos =

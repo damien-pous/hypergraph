@@ -1,18 +1,18 @@
 open Hypergraphs
-open Conversions.S
+open Conversions
 
 let from_string s =
   try
     let l = Lexing.from_string s in
     let t = Parser.main Lexer.token l in
-    Raw.smap Info.print_smapper t
+    Raw.map Info.print_mapper t
   with e -> Format.eprintf "error parsing  %s@." s; raise e
 
-let to_string = Format.kasprintf (fun s -> s) "%a" (Raw.spp Full)
+let to_string = Format.kasprintf (fun s -> s) "%a" (Raw.pp Full)
 
-let iso = Graph.siso Misc.same_label
-let gpp = Graph.spp Sparse
-let rpp = Raw.spp Sparse
+let iso = Graph.iso Info.same_label
+let gpp = Graph.pp Sparse
+let rpp = Raw.pp Sparse
 (* let rpp_full = Raw.spp Full *)
 
 let test s =

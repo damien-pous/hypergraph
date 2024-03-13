@@ -72,9 +72,11 @@ Perm:        finite support permutations
 Inj:         finite support injections
 ISeq:        increasing sequences
 
+Types:       shared class & module types (no implementation)
+
 Info:        informations about vertices & edges
 
-Common:      type aliases, algebra types
+Functor:     functors between module types
 
 Raw:         raw terms, where arity is inferred
 Term:        plain terms, as in the paper

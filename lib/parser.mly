@@ -1,8 +1,8 @@
 %token LPAR RPAR LT GT COMMA SEMI STAR SERIES DOT QUOTE SHARP
 %token PAR NIL LFT FGT EOF
-%token <string> LABEL
-%token <Perm.t> PRM
-%token <Inj.t> INJ
+%token <Types.label> LABEL
+%token <Types.perm> PRM
+%token <Types.inj> INJ
 %token <int> FIX
 %token <Info.kv> KEYVAL
 
@@ -11,13 +11,12 @@
 %nonassoc LFT FGT PRM INJ
 %right QUOTE
 
-%type <Info.kvl Raw.t> term
-%type <Info.kvl Raw.st> sterm
-%type <Info.kvl Raw.st> main
+%type <Info.kvl Raw.t> main
 %start main
 
 %{
-    open Raw    
+    open Raw
+    open U
 %}
 
 %%
@@ -42,8 +41,8 @@ kvl:
 | { [] }
 
 sterm:
-| k=FIX; t=term { fix (fun _ -> []) k t }
-| t=term { flex (fun _ -> []) t }
+| k=FIX; t=term { source (Seq.init k (fun _ -> [])) t }
+| t=term { flexible (fun _ -> []) t }
 | SHARP; h=separated_nonempty_list(COMMA, kvl); t=term {source (Seq.of_list h) t}
 
 main:
