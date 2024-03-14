@@ -1,7 +1,9 @@
 (library
  (name hypergraphs)
  (libraries vg)
- (modules_without_implementation types))
+ (modules_without_implementation types)
+; (flags -w -27)
+)
 
 (menhir (modules parser))
 (ocamllex lexer)
