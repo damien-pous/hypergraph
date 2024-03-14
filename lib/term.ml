@@ -53,7 +53,7 @@ let map f =
     | Fgt(x,u) -> fgt (f.fi x) (map u)
     | Lft u    -> lft (map u)
     | Prm(p,u) -> prm p (map u)
-    | Edg(k,l) -> edg k (f.fe l)
+    | Edg(k,l) -> edg k (f.fe k l)
   in map
 
 module I(X: ALGEBRA) = struct

@@ -104,7 +104,7 @@ class virtual eprinter_ =
     method private pp_other mode f = if mode=Full then pp_kvl f self#kvl
     initializer label <- get_label self#kvl; self#rem "label"
   end
-class eprinter l = object inherit holder l inherit eprinter_ end
+class eprinter _ l = object inherit holder l inherit eprinter_ end
 
 let print_mapper = {fs=new sprinter;fi=new iprinter;fe=new eprinter}
 
@@ -151,14 +151,14 @@ class sdrawer i l =
       if not (self#has "radius") then radius <- Constants.sradius
   end
 
-class edrawer l =
+class edrawer k l =
   object(self)
     inherit holder l
     inherit eprinter_
     inherit! draw
     initializer
       color <- Constants.color' ?color:(get_color l) label;
-      if not (self#has "radius") then radius <- Constants.eradius;
+      if not (self#has "radius") then radius <- Constants.eradius k;
       if not placed then 
         (match self#get "shift" with Some v -> pos <- p2_of_string v | None -> ());
   end
@@ -168,5 +168,5 @@ let draw_mapper = {fs=new sdrawer;fi=new idrawer;fe=new edrawer}
 
 let drawable_ivertex p = new idrawer ["pos", string_of_p2 p]
 let drawable_source i p = new sdrawer i ["pos", string_of_p2 p]
-let drawable_edge _ l = new edrawer ["label", l]
+let drawable_edge k l = new edrawer k ["label", l]
 

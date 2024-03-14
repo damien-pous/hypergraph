@@ -2,7 +2,7 @@ open Gg
 
 let iradius = 0.02
 let sradius = 0.03
-let eradius = 0.08
+let eradius = function 3 -> 0.2 | _ -> 0.08
 let linewidth = 0.001
 let fontsize = 0.07
 let font = Vg.Font.{name="Latin Modern Roman"; slant=`Italic; weight=`W100; size=fontsize }

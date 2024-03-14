@@ -18,7 +18,11 @@ type circle = { center: p2; radius: float } (* circles *)
 type formatter = Format.formatter
 type pp_mode = Full | Sparse
 
-type ('a,'b) mapper = {fs: int -> 'a -> 'b; fi: 'a -> 'b; fe: 'a -> 'b}
+(* 'functions' used to map decorations in terms or graphs *)
+type ('a,'b) mapper =
+  { fs: int -> 'a -> 'b;        (* sources; first argument is the arity *)
+    fi: 'a -> 'b;               (* inner vertices *)
+    fe: int -> 'a -> 'b }       (* edges; first argument is the edge arity *)
 
 class type printable =
   object

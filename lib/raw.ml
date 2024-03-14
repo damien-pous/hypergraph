@@ -130,20 +130,21 @@ module I(X: EALGEBRA) = struct
   let eval u = xeval (arity u) u
 end
 
-let map f =
-  let rec map = function
+let xmap f =
+  let rec xmap k = function
     | Nil        -> Nil
-    | Par(u,v)   -> Par(map u, map v)
-    | Fgt(x,u)   -> Fgt(f.fi x, map u)
-    | Lft u      -> Lft(map u)
-    | Prm(p,u)   -> Prm(p, map u)
-    | Edg x      -> Edg(f.fe x)
-    | Inj(i,u)   -> Inj(i,map u)
-    | Ser l      -> Ser(List.map map l)
-    | Str(x,l)   -> Str(f.fi x, List.map map l)
-    | Dot(x,u,v) -> Dot(f.fi x, map u, map v)
-    | Cnv u      -> Cnv(map u)
-  in map
+    | Par(u,v)   -> Par(xmap k u, xmap k v)
+    | Fgt(x,u)   -> Fgt(f.fi x, xmap (k+1) u)
+    | Lft u      -> Lft(xmap (k-1) u)
+    | Prm(p,u)   -> Prm(p, xmap k u)
+    | Edg x      -> Edg(f.fe k x)
+    | Inj(i,u)   -> Inj(i,xmap (Inj.dom i) u)
+    | Ser l      -> Ser(List.map (xmap (k-1)) l)
+    | Str(x,l)   -> Str(f.fi x, List.map (xmap 2) l)
+    | Dot(x,u,v) -> Dot(f.fi x, xmap 2 u, xmap 2 v)
+    | Cnv u      -> Cnv(xmap 2 u)
+  in xmap
+let map f u = xmap f (arity u) u
 
 type l = BOT | PAR | DOT | PRF | CNV 
 let head = function
@@ -194,7 +195,7 @@ let width _ = assert false      (* not useful on raw terms? *)
 let source = U.source
 let flexible f u = let k = U.arity u in source (Seq.init k f) u
 
-let map f (s,u) = (Seq.imap f.fs s, U.map f u)
+let map f (s,u) = (Seq.imap f.fs s, U.xmap f (Seq.size s) u)
 
 let pp mode f (s,u) =
   if mode=Sparse || Seq.forall (fun s -> s#pp_empty mode) s then

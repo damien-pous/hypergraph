@@ -88,7 +88,7 @@ let map f g =
   let _ = failwith "Warning: fix Graph.map before using it" in
   { arity = g.arity;
     ivertices = Set.map f.fi g.ivertices;
-    edges = Set.map (fun x -> { einfo = f.fe x.einfo;
+    edges = Set.map (fun x -> { einfo = f.fe (Seq.size x.neighbours) x.einfo;
                                 neighbours = Seq.map (vmap f.fi) x.neighbours }) g.edges }
 
 let add_edge einfo neighbours g =

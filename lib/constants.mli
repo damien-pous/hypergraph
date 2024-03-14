@@ -3,7 +3,7 @@ open Vg
 
 val iradius : float
 val sradius : float
-val eradius : float
+val eradius : int -> float
 val linewidth : float
 val fontsize : float
 val font : font

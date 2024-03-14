@@ -62,7 +62,7 @@ let map f =
   let rec map (k,s) = (k,ismap fp_map s)
   and fp_map = function
     | Fgt(x,u) -> Fgt(f.fi x, map u)
-    | Edg(k,p,x) -> Edg(k,p,f.fe x)
+    | Edg(k,p,x) -> Edg(k,p,f.fe k x)
   in map
 
 module I(X: EALGEBRA) = struct
