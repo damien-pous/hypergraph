@@ -18,6 +18,8 @@ type circle = { center: p2; radius: float } (* circles *)
 type formatter = Format.formatter
 type pp_mode = Full | Sparse
 
+type kind = S | I | E           (* source, inner vertex, edge *)
+
 (* 'functions' used to map decorations in terms or graphs *)
 type ('a,'b) mapper =
   { fs: int -> 'a -> 'b;        (* sources; first argument is the arity *)
@@ -57,6 +59,7 @@ class type picture =
     method point: ?color:color -> p2 -> unit
     method segment: ?color:color -> p2 -> p2 -> unit 
     method line: ?color:color -> line -> unit 
+    method box: ?color:color -> Gg.box2 -> unit 
     method text: p2 -> string -> unit 
   end
 

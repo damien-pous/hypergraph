@@ -1,11 +1,18 @@
 open Gg
 
-let iradius = 0.02
-let sradius = 0.03
-let eradius = function 3 -> 0.2 | _ -> 0.08
-let linewidth = 0.001
-let fontsize = 0.07
+let inch = 72.27
+
+(* in points *)
+let fontsize = 11.
 let font = Vg.Font.{name="Latin Modern Roman"; slant=`Italic; weight=`W100; size=fontsize }
+
+(* in inches *)
+let linewidth = 0.5
+let pradius = 2.0
+let iradius = fontsize *. 0.4
+let sradius = fontsize *. 0.5
+let eradius0 = fontsize *. 1.0
+let eradius = function 3 -> 3. *. eradius0 | _ -> eradius0
 
 let gray = Color.gray 0.5
 let xcolor = function
@@ -30,6 +37,3 @@ let color' ?color label =
                | "e" -> "green"
                | _   -> "gray")
 let color = xcolor
-
-(* should we render labels with vg or cairo ? *)
-let render_labels_with_cairo = false

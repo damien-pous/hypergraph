@@ -5,7 +5,7 @@ open Vg
 
 let area = `O { P.o with P.width = Constants.linewidth }
 
-class pic: picture =
+class pic =
   object(self)
     val mutable image = I.void
     method clear = image <- I.void
@@ -15,19 +15,28 @@ class pic: picture =
     method surface ?(color=Color.gray 0.5) p = self#blend (I.const color |> I.cut p); self# path p
     method circle ?color c = self#path ?color (P.empty |> P.circle c.center c.radius)
     method disc ?color c = self#surface ?color (P.empty |> P.circle c.center c.radius)
-    method point ?color p = self#surface ?color (P.empty |> P.circle p 0.006)
+    method point ?color p = self#surface ?color (P.empty |> P.circle p Constants.pradius)
     method segment ?color x y = self#path ?color (P.empty |> P.sub x |> P.line y)
+    method box ?color b = self#path ?color (P.empty |> P.rect b)
     method line ?color l =
       let d = V2.smul 10. l.dir in
       self#point ?color l.point;
       self#segment ?color (V2.sub l.point d) (V2.add l.point d)
     method text p text =
-      if not Constants.render_labels_with_cairo then
-        let p = V2.sub p
-                  (V2.v (float_of_int (String.length text) *. Constants.fontsize /. 3.)
-                     (Constants.fontsize /. 3.)) in
-        self#blend (I.move p (I.const Color.black |> I.cut_glyphs ~text Constants.font []))
+      let p = V2.sub p
+                (V2.v (float_of_int (String.length text) *. Constants.fontsize/.3.)
+                   (Constants.fontsize/.3.)) in
+      self#blend (I.move p (I.const Color.black |> I.cut_glyphs ~text Constants.font []))
   end
+
+
+let bbox (g: #drawable graph) =  
+  let b = ref Box2.empty in
+  iter_infos (fun i ->
+      let d = i#radius *. 2. in 
+      b := Box2.union !b (Box2.v_mid i#pos (Size2.v d d));
+    ) g;
+  !b
 
 let graph (g: #drawable graph) =
   let npos = Seq.lmap (fun v -> (vinfo g v)#pos) in
@@ -56,4 +65,5 @@ let graph (g: #drawable graph) =
   iter_edges draw_edge g;
   iter_sources draw_source g;
   iter_ivertices draw_ivertex g;
+  (* draw#box (bbox g); *)
   draw#get

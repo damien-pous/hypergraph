@@ -7,27 +7,45 @@ open Vg
 
 let width = 1000
 let height = 1000
-let width' = float_of_int width
-let height' = float_of_int height
 
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~width ~height ~title:"TW" ()
+let backing = ref (GDraw.pixmap ~width ~height ~window ())
 let vbox = GPack.vbox ~packing:window#add ()
 let da = GMisc.drawing_area ~packing:vbox#add ()
-let size = Size2.v width' height'
-let view = Box2.unit
+let view = Box2.v V2.zero (V2.v 400. 400.)
 
-let x = ref (P2.v 0.3 0.5)
-let y = ref (P2.v 0.7 0.5)
-let z = ref (P2.v 0.5 0.65)
-let c = ref (P2.v 0.65 0.6)
-let r = ref 0.03
+let x = ref (P2.v 120. 200.)
+let y = ref (P2.v 280. 200.)
+let z = ref (P2.v 200. 260.)
+let c = ref (P2.v 260. 240.)
+let r = ref (Constants.eradius 2)
 let s = ref false
 let move = ref c
 let mode = ref 0
 
+let da_size() =
+  let w,h = !backing#size in
+  float_of_int w, float_of_int h
+let da_size'() =
+  let w,h = da_size() in Size2.v w h
+
+let p2_of_pointer' (x,y) =
+  let w,h = da_size() in
+  (* p is (x,y) in [0;1]x[0;1] *)
+  let p = P2.v
+            (x /. w)
+            (1. -. y /. h)
+  in
+  let v = view in
+  V2.add (Box2.o v) (V2.mul p (Box2.size v))
+
+let p2_of_pointer (x,y) = p2_of_pointer' (float_of_int x, float_of_int y)
+
+let pointer() = p2_of_pointer da#misc#pointer
+
 let repaint () =    
-  let cr = Cairo_gtk.create da#misc#window in
+  let cr = Cairo_gtk.create !backing#pixmap in 
   let vgr = Vgr.create (Vgr_cairo.target cr) `Other in 
   let draw = new Draw.pic in
   let _ = draw#blend (I.const Color.white) in
@@ -36,7 +54,6 @@ let repaint () =
   let x = !x in
   let y = !y in
   let z = !z in
-
   (match !mode with
    | 0 ->
       draw#segment x c.center;
@@ -66,24 +83,19 @@ let repaint () =
    
    | _ -> failwith "invalid mode"
   );
-  draw#circle c;
-  
-
-  let _ = Vgr.render vgr (`Image (size, view, draw#get)) in
+  draw#circle c;  
+  let _ = Vgr.render vgr (`Image (da_size'(), view, draw#get)) in
   let _ = Vgr.render vgr (`End) in
-  ()
+  da#misc#draw None
 
 let update_params _ =
-  let (px,py) = da#misc#pointer in
-  let p = P2.v (float_of_int px /. width') (1. -. float_of_int py /. height') in
-  !move := p;
+  !move := pointer();
   repaint();
   true
 
 let _ = GtkBase.Widget.add_events da#as_widget [`BUTTON_MOTION; `BUTTON_PRESS(* ; `BUTTON_RELEASE *)]
 let _ = da#event#connect#motion_notify ~callback:update_params
 let _ = da#event#connect#button_press ~callback:update_params
-let _ = da#event#connect#expose ~callback:(fun _ -> repaint (); false)
 let _ = window#connect#destroy ~callback:Main.quit
 let _ = window#event#connect #key_press ~callback:(fun e ->
             (match GdkEvent.Key.string e with
@@ -101,6 +113,27 @@ let _ = window#event#connect #key_press ~callback:(fun e ->
              | "-" -> r := !r /. 1.1
              | _ -> ()
             ); repaint(); true)
+let _ =
+  da#event#connect#expose ~callback:(fun ev ->
+      let area = GdkEvent.Expose.area ev in
+      let x = Gdk.Rectangle.x area in
+      let y = Gdk.Rectangle.y area in
+      let width = Gdk.Rectangle.width area in
+      let height = Gdk.Rectangle.width area in
+      let drawing =
+        da#misc#realize ();
+        new GDraw.drawable da#misc#window
+      in
+      drawing#put_pixmap ~x ~y ~xsrc:x ~ysrc:y ~width ~height !backing#pixmap;
+      false)
+let _ =
+  da#event#connect#configure ~callback:(fun ev ->
+      let width = GdkEvent.Configure.width ev in
+      let height = GdkEvent.Configure.height ev in
+      let pixmap = GDraw.pixmap ~width ~height ~window () in
+      backing := pixmap;
+      repaint();
+      false)
 let _ =
   window#show ();
   Main.main ()

@@ -31,10 +31,12 @@ val rem_vertex: 'a vertex -> 'a graph -> 'a graph
 val add_edge: 'a -> 'a vertex seq -> 'a graph -> 'a edge * 'a graph
 val add_ivertex: 'a -> 'a graph -> 'a graph
 
+val get_info: 'a graph -> kind*int -> 'a
+
 (* isomorphim check, using the given function to compare edge infos *)
 val iso: ('a -> 'a -> bool) -> 'a graph -> 'a graph -> bool
 
-val pp_dot: pp_mode -> formatter -> #printable graph -> unit
+val pp_dot: pp_mode -> formatter -> #drawable graph -> unit
 
 module U: sig
   (* subset of the above functions on source-decoration-free graphs *)
@@ -54,7 +56,7 @@ module U: sig
   
   val iso: ('a -> 'a -> bool) -> 'a ugraph -> 'a ugraph -> bool
 
-  val pp_dot: pp_mode -> formatter -> #printable ugraph -> unit
+  val pp_dot: pp_mode -> formatter -> #drawable ugraph -> unit
 end
 
 val find: ('a -> bool) -> 'a graph -> [`V of 'a vertex | `E of 'a edge | `N]

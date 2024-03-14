@@ -14,27 +14,35 @@
 %type <Info.kvl Raw.t> main
 %start main
 
+
+(* for parsing dot files and extracting positions *)
+%token <Gg.p2> POS
+%token <Gg.box2> BOX
+%token <Types.kind*int> ID
+
+%type <Gg.box2*(((Types.kind*int)*Gg.p2) list)> dotlines
+%start dotlines
+
 %{
     open Raw
-    open U
 %}
 
 %%
 
 term:
 | LPAR; t=term; RPAR { t }
-| NIL { nil' }
-| u=term; PAR; v=term { par u v }
-| FGT; x=kvl; t=term { fgt x t }
-| LFT; t=term { lft t }
-| p=PRM; t=term { prm p t }
-| label=LABEL; x=kvl { edg' (Info.kv "label" label :: x) }
+| NIL { Nil }
+| u=term; PAR; v=term { Par(u,v) }
+| FGT; x=kvl; t=term { Fgt(x,t) }
+| LFT; t=term { Lft t }
+| p=PRM; t=term { Prm(p,t) }
+| label=LABEL; x=kvl { Edg (Info.kv "label" label :: x) }
 (* syntactic sugar *)
-| i=INJ; t=term { inj' i t }
-| u=term; DOT; x=kvl; v=term { dot x u v }
-| u=term; QUOTE { cnv u }
-| STAR; x=kvl; LPAR; ts=separated_list(COMMA, term); RPAR { str x ts }
-| SERIES; LPAR; ts=separated_list(COMMA, term); RPAR { ser ts }
+| i=INJ; t=term { Inj(i,t) }
+| u=term; DOT; x=kvl; v=term { Dot(x,u,v) }
+| u=term; QUOTE { Cnv u }
+| STAR; x=kvl; LPAR; ts=separated_list(COMMA, term); RPAR { Str(x,ts) }
+| SERIES; LPAR; ts=separated_list(COMMA, term); RPAR { Ser ts }
 
 kvl:
 | LT; h=separated_list(SEMI, KEYVAL); k=kvl GT { h @ k }
@@ -47,3 +55,14 @@ sterm:
 
 main:
 | t=sterm; EOF { t }
+
+
+(* dot files *)
+dotlines:
+| b=BOX; SEMI; l=xdotlines { b,l }
+
+xdotlines:
+| i=ID; p=POS; SEMI; q=xdotlines { (i,p)::q }
+| ID*; SEMI; q=xdotlines { q }
+| EOF { [] }
+  

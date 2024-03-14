@@ -4,6 +4,8 @@ tool & library to visualize and edit sourced labelled hypergraphs
 
 # build instructions
 
+need graphviz to place graphs, then
+
 opam install dune cairo2-gtk vg 
 make
 

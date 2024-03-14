@@ -5,6 +5,12 @@
  (libraries hypergraphs cairo2-gtk vg.cairo))
 
 (executable
+ (public_name scales)
+ (name scales)
+ (modules scales)
+ (libraries vg.cairo))
+
+(executable
  (public_name hg)
  (modules hg)
  (libraries hypergraphs))

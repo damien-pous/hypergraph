@@ -13,13 +13,12 @@ open Vg
 let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
-let view_center = ref V2.zero
-let zoom = ref 400.
+let view = ref (Box2.v_mid V2.zero (V2.v 800. 800.))
 let picture = ref I.void
 
-let text = "a|lb|(23)lc|(13)l(f<pos=.8,.8>d)"
+let text = "a|lb|(23)lc|(13)l(fd)"
 
-(* initial width/height*)
+(* initial width/height *)
 let width = 800
 let height = 800
 
@@ -37,87 +36,79 @@ let da_size() =
 let da_size'() =
   let w,h = da_size() in Size2.v w h
 
-let view() =
-  let s = da_size'() in
-  Box2.v_mid !view_center (V2.(/) s !zoom)
-
-let p2_of_pointer (x,y) =
+let p2_of_pointer' (x,y) =
   let w,h = da_size() in
   (* p is (x,y) in [0;1]x[0;1] *)
   let p = P2.v
-            (float_of_int x /. w)
-            (1. -. float_of_int y /. h)
+            (x /. w)
+            (1. -. y /. h)
   in
-  let v = view() in
+  let v = !view in
   V2.add (Box2.o v) (V2.mul p (Box2.size v))
 
-let v2_of_pointer_shift dx dy =
-  let w,h = da_size() in
-  let p = V2.v (dx /. w) (-. dy /. h) in
-  V2.mul p (V2.(/) (da_size'()) !zoom)
+let p2_of_pointer (x,y) = p2_of_pointer' (float_of_int x, float_of_int y)
 
-let pointer_of_p2 p =
-  let w,h = da_size() in
-  let v = view() in
-  let p = V2.div (V2.sub p (Box2.o v)) (Box2.size v) in
-  let x',y' = V2.x p, V2.y p in
-  (w *. x', h *. (1.-.y'))
+let pointer() = p2_of_pointer da#misc#pointer
+
+let v2_of_pointer_shift d =
+  V2.sub (p2_of_pointer' d) (p2_of_pointer (0,0))
+
+(* let pointer_of_p2 p = *)
+(*   let w,h = da_size() in *)
+(*   let v = !view in *)
+(*   let p = V2.div (V2.sub p (Box2.o v)) (Box2.size v) in *)
+(*   let x',y' = V2.x p, V2.y p in *)
+(*   (w *. x', h *. (1.-.y')) *)
 
 (* rendering the picture *)
 let render () =
   let cr = Cairo_gtk.create !backing#pixmap in  
   let vgr = Vgr.create (Vgr_cairo.target cr) `Other in 
   let size = da_size'() in
-  let view = view() in
   let drawing = I.blend !picture (I.const Color.white) in
-  let _ = Vgr.render vgr (`Image (size, view, drawing)) in
+  let _ = Vgr.render vgr (`Image (size, !view, drawing)) in
   let _ = Vgr.render vgr (`End) in
-  if Constants.render_labels_with_cairo then
-    begin
-      Cairo.set_source_rgb cr 0.0 0.0 0.0;
-      Cairo.select_font_face cr "Latin Modern Roman" ~slant:Cairo.Italic;
-      Cairo.set_font_size cr (Constants.fontsize *. !zoom);
-      let text p s =
-        let (x,y) = pointer_of_p2 p in
-        let te = Cairo.text_extents cr s in
-        Cairo.move_to cr
-          (x -. te.width /. 2. -. te.x_bearing)
-          (y -. te.height /. 2. -. te.y_bearing);
-        Cairo.show_text cr s
-      in
-      Graph.iter_infos (fun x -> text x#pos x#label) !graph
-    end;
   da#misc#draw None
+
+let export_dot () =
+  let o = open_out "test.dot" in
+  let f = Format.formatter_of_out_channel o in
+  Graph.pp_dot Sparse f !graph;
+  close_out o;
+  print_endline "exported to test.dot"
 
 let export_pdf () =
   (* export via cairo (could not find how to get the right fonts with vg) *)
-  let w,h = 100.,100. in
-  let size = Size2.v w h (* mm *) in
-  let view = view() in
-  let image = !picture in
+  let view = Draw.bbox !graph in
+  let size = Box2.size view in
+  let w,h = V2.x size, V2.y size in
   let i = Cairo.PDF.create "test.pdf" ~w ~h in
   let cr = Cairo.create i in
   let vgr = Vgr.create (Vgr_cairo.target cr) `Other in 
-  ignore (Vgr.render vgr (`Image (size, view, image)));
+  ignore (Vgr.render vgr (`Image (size, view, !picture)));
   ignore (Vgr.render vgr `End);
   Cairo.Surface.finish i;
   print_endline "exported to test.pdf"
 
 let export_svg() =
   (* export via vg (also possible via cairo as above) *)
-  let size = Size2.v 100. 100. (* mm *) in
-  let view = view() in
-  let image = !picture in
+  let view = Draw.bbox !graph in
+  let size = Box2.size view in
   let o = open_out_bin "test.svg" in
   let title = "some nice graph" in
   let description = entry#text in
   let xmp = Vgr.xmp ~title ~description () in
   let warn w = Vgr.pp_warning Format.err_formatter w in
   let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel o) in
-  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r (`Image (size, view, !picture)));
   ignore (Vgr.render r `End);
   close_out o;
   print_endline "exported to test.svg"
+
+let export() =
+  export_dot();
+  export_svg();
+  export_pdf()
 
 (* recomputing the picture and rendering it *)
 let redraw() = picture := Draw.graph !graph; render()
@@ -151,13 +142,18 @@ let set_graph _ =
       (Term.pp Sparse) t
       (NTerm.pp Sparse) n;
     let g = graph_of_raw r in
-    Place.circle_random g;    
+    Place.sources_on_circle g;
+    Place.graphviz g;
+    let b = Draw.bbox g in
+    let bw,bh = Box2.w b, Box2.h b in
+    let w,h = da_size() in
+    if bw*.h <= bh*.w
+    then view := Box2.v_mid (Box2.mid b) (V2.smul 1.1 (V2.v (bh*.w/.h) bh))
+    else view := Box2.v_mid (Box2.mid b) (V2.smul 1.1 (V2.v bw (bw*.h/.w)));
     graph := g;
     active := `N;
     redraw()
   with e -> relabel "Parsing error\n"; raise e
-  
-let pointer() = p2_of_pointer da#misc#pointer
 
 let catch() = Graph.find (Geometry.inside (pointer())) !graph
 
@@ -173,7 +169,7 @@ let button_press e =
    | `Normal ->
       active := (match catch() with
                    | `V x -> `V x | `E x -> `E x
-                   | `N -> `C (!view_center, GdkEvent.Button.x e, GdkEvent.Button.y e))
+                   | `N -> `C (GdkEvent.Button.x e, GdkEvent.Button.y e))
   | `InsertEdge l ->
      match catch() with
      | `V v -> mode := `InsertEdge (Seq.snoc l v)
@@ -192,19 +188,23 @@ let motion_notify e =
      Graph.iter_edges'' (fun e _ n-> if Seq.mem v n then Place.center_edge !graph e) !graph;
      redraw(); true
   | `E e -> (Graph.einfo e)#move (pointer()); redraw(); true
-  | `C (vc0,x0,y0) ->
-     view_center := V2.sub vc0
-                      (v2_of_pointer_shift
-                         (GdkEvent.Motion.x e -. x0)
-                         (GdkEvent.Motion.y e -. y0));
+  | `C (x0,y0) ->
+     let x,y = GdkEvent.Motion.x e, GdkEvent.Motion.y e in     
+     view := Box2.move (v2_of_pointer_shift (x0 -. x, y0 -. y)) !view;
+     active := `C(x,y);
      render(); true
   | `N -> false
 
+let zoom s =
+  let c = pointer() in
+  let v = V2.sub c (Box2.o !view) in
+  view := Box2.v (V2.sub c (V2.smul s v)) (V2.smul s (Box2.size !view));  
+  render()
+
 let scroll e =
-  (* TODO: update view_center so that we zoom around the pointer  *)
   match GdkEvent.Scroll.direction e with
-  | `UP -> zoom := !zoom *. 1.1; render(); true
-  | `DOWN -> zoom := !zoom /. 1.1; render(); true
+  | `UP -> zoom 0.9; true
+  | `DOWN -> zoom 1.1; true
   | _ -> false
 
 let scale s =
@@ -247,14 +247,14 @@ let edge l s =
 let center() =
   match catch() with
   | `E e -> Place.center_edge !graph e; redraw()
-  | _ ->  view_center := pointer()
+  | _ ->  view := Box2.move (V2.sub (pointer()) (Box2.mid !view)) !view
   
 let key_press e =
   (match !mode with
    | `Normal ->
       (match GdkEvent.Key.string e with
        | "q" -> Main.quit()
-       | "o" -> export_svg(); export_pdf()
+       | "o" -> export()
        | "c" -> center()
        | "-" -> scale (1. /. 1.1)
        | "+" -> scale 1.1
@@ -304,7 +304,9 @@ let _ =
       let width = GdkEvent.Configure.width ev in
       let height = GdkEvent.Configure.height ev in
       let pixmap = GDraw.pixmap ~width ~height ~window () in
+      let b = Box2.v_mid (Box2.mid !view) (V2.sub (p2_of_pointer (width,0)) (p2_of_pointer (0,height))) in
       backing := pixmap;
+      view := b;
       render();
       false)
 let _ =

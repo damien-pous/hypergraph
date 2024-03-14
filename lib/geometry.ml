@@ -15,6 +15,7 @@ class nopic: picture =
     method point ?color _ = ignore color 
     method segment ?color _ _ = ignore color 
     method line ?color _ = ignore color 
+    method box ?color _ = ignore color 
     method text _ _ = ()
   end
 let nopic = new nopic

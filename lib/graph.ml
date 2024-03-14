@@ -34,18 +34,35 @@ let iter_edges'' f g = Set.iter (fun e -> f e e.einfo e.neighbours) g.edges
 let iter_edges' f g = Set.iter (fun e -> f e) g.edges
 let iter_edges f g = Set.iter (fun e -> f e.einfo e.neighbours) g.edges
 
-let pp_dot mode f g =
+let ppp f x =
+  let d = 2. *. x#radius /. Constants.inch in
+  Format.fprintf f "width=%f,height=%f,fixedsize=true,label=\"\"" d d;
+  if x#placed then
+    Format.fprintf f ",pos=\"%f,%f\",pin=true" (Gg.P2.x x#pos) (Gg.P2.y x#pos)
+let pp_dot_sparse f g =
   let ppv f = function
-  | Src i -> Format.fprintf f "%i" i
+  | Src i -> Format.fprintf f "s%i" i
   | Inn x -> Format.fprintf f "i%i" (Set.index x g.ivertices)
   in
-  Set.iteri (fun id x -> Format.fprintf f "i%i %t\n" id (x#pp mode)) g.ivertices;
+  Set.iteri (fun id x -> Format.fprintf f "i%i[%a]\n" id ppp x) g.ivertices;
   Set.iteri (fun id x ->
-      Format.fprintf f "e%i %t\n" id (x.einfo#pp mode);
-        Seq.iter (fun i v ->
-          Format.fprintf f "e%i -- %a [label=%i]\n" id ppv v i
-        ) x.neighbours
+      Format.fprintf f "e%i[%a]\n" id ppp x.einfo;
+      Format.fprintf f "e%i--%a\n" id (Seq.pp ppv) x.neighbours
     ) g.edges
+
+let pp_dot mode f =
+  match mode with Sparse -> pp_dot_sparse f | _ -> failwith "todo"
+  (* let ppv f = function *)
+  (* | Src i -> Format.fprintf f "%i [shape=box]" i *)
+  (* | Inn x -> Format.fprintf f "i%i [shape=circle]" (Set.index x g.ivertices) *)
+  (* in *)
+  (* Set.iteri (fun id x -> Format.fprintf f "i%i %t\n" id (x#pp mode)) g.ivertices; *)
+  (* Set.iteri (fun id x -> *)
+  (*     Format.fprintf f "e%i %t\n" id (x.einfo#pp mode); *)
+  (*       Seq.iter (fun i v -> *)
+  (*         Format.fprintf f "e%i -- %a [label=%i]\n" id ppv v i *)
+  (*       ) x.neighbours *)
+  (*   ) g.edges *)
 
 let nil arity =
   { arity; ivertices = Set.empty; edges = Set.empty }
@@ -256,11 +273,24 @@ let find f g =
     `N
   with Not_found -> !r
 
-let pp_dot mode f (s,g) =
+let get_info (s,g) = function
+  | S,i -> Seq.get s i
+  | I,i -> Set.nth g.U0.ivertices i
+  | E,i -> (Set.nth g.U0.edges i).einfo
+
+let pp_dot_sparse f (s,g) =
   Format.fprintf f "graph {\n";
-  Seq.iter (fun i x -> Format.fprintf f "%i %t\n" i (x#pp mode)) s;
-  U.pp_dot mode f g;
+  Seq.iter (fun i x -> Format.fprintf f "s%i[%a]\n" i U.ppp x) s;
+  U.pp_dot_sparse f g;
   Format.fprintf f "}\n"
+
+let pp_dot mode f =
+  match mode with Sparse -> pp_dot_sparse f | _ -> failwith "todo"
+(* let pp_dot mode f (s,g) = *)
+(*   Format.fprintf f "graph {\n"; *)
+(*   Seq.iter (fun i x -> Format.fprintf f "s%i%a\n" i (x#pp mode)) s; *)
+(*   U.pp_dot mode f g; *)
+(*   Format.fprintf f "}\n" *)
 
 (* let export_gen cmd print file g = *)
 (*   let o = Unix.open_process_out (cmd^" > "^file) in *)

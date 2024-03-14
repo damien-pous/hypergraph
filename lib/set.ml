@@ -72,6 +72,14 @@ let index j x =
     iteri (fun id i -> if i==j then raise (Found id)) x;
     failwith "not found"
   with Found id -> id
+let rec nth x i =
+  match x with
+  | S v when i=1 -> v
+  | U(x,y) ->
+     let n = size x in
+     if i<=n then nth x i
+     else nth y (i-n)
+  | _ -> failwith "nth: invalid index"
 
 let to_list l = fold List.cons [] l
 

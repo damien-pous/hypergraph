@@ -1,13 +1,19 @@
 open Gg
 open Vg
 
+(* number of points in an inch: 72(.27) *)
+val inch: float
+
+(* below: always in points *)
+val fontsize : float
+val font : font
+
 val iradius : float
 val sradius : float
 val eradius : int -> float
+val pradius : float
 val linewidth : float
-val fontsize : float
-val font : font
+
 val gray : color
 val color : string -> color
 val color' : ?color:color -> string -> color
-val render_labels_with_cairo : bool

@@ -1,6 +1,6 @@
 (library
  (name hypergraphs)
- (libraries vg)
+ (libraries vg unix)
  (modules_without_implementation types)
 ; (flags -w -27)
 )

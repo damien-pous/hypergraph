@@ -1,6 +1,15 @@
 open Hypergraphs
 open Conversions
 
+
+let _ = 
+  try
+    let i = open_in "/home/damien/git/hypergraph/test.pdot" in
+    let l = Lexing.from_channel i in
+    ignore (Parser.dotlines Lexer.dotline l);
+    close_in i
+  with e -> raise e
+
 let from_string s =
   try
     let l = Lexing.from_string s in

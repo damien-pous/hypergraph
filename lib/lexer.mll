@@ -12,6 +12,10 @@
            | Some j -> split (int_of_string (String.sub s i (j-i-1)) :: acc) (j+1)
     in List.rev (split [int_of_string x] 0)
   let keyval k v = KEYVAL(Info.kv k v)
+  let p2_of_strings x y =
+    Gg.P2.v (float_of_string x) (float_of_string y)
+  let box2_of_strings x y x' y'=
+    Gg.Box2.v (p2_of_strings x y) (p2_of_strings x' y')
 }
 
 let lstart = ['a'-'e' 'g'-'k' 'm'-'r' 't'-'z' ]
@@ -31,6 +35,7 @@ let float = sign? digit* frac? exp?
 let pos = float ',' float
 
 let blank = [ ' ' '\r' '\t' '\n' ]
+let skip = [^ ';']* ';'
 
 rule token = parse
   | blank                                  { token lexbuf }
@@ -69,3 +74,21 @@ rule token = parse
   | (key as k) '=' (word as v)             { keyval k v }
   | eof                                    { EOF }
   | _ as c                                 { Printf.kprintf failwith "lexing error near `%c'" c }
+
+
+(* for extracting positions in dot files *)
+and dotline = parse
+  | 's' (nint as i)     { ID (Types.S,int_of_string i) }
+  | 'i' (nint as i)     { ID (Types.I,int_of_string i) }
+  | 'e' (nint as i)     { ID (Types.E,int_of_string i) }
+  | "pos=\""
+      (float as x) ','
+      (float as y) '"'  { POS(p2_of_strings x y) }
+  | "bb=\""
+      (float as x1) ','
+      (float as y1) ','
+      (float as x2) ','
+      (float as y2) '"' { BOX(box2_of_strings x1 y1 x2 y2) }
+  | ';'                 { SEMI }
+  | eof                 { EOF }
+  | _                   { dotline lexbuf }

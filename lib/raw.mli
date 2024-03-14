@@ -1,6 +1,6 @@
 open Types
 
-type 'a s = private
+type 'a s =
   | Nil
   | Par of 'a s * 'a s
   | Fgt of 'a * 'a s
