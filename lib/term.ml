@@ -11,7 +11,6 @@ type 'a s =
 module M = struct
     
 type 'a t = 'a s
-type ('a,'b) m = ('a,'b) umapper
 
 let rec arity = function
   | Nil k | Edg(k,_) -> k

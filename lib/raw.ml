@@ -18,7 +18,6 @@ type 'a u = 'a s
 
 module U = struct
 type 'a t = 'a s
-type ('a,'b) m = ('a,'b) umapper  
 
 let nil' = Nil
 let nil _ = nil'
@@ -186,7 +185,6 @@ let edg' = U.edg'
 let inj' = U.inj'
 
 type 'a t = 'a seq * 'a u
-type ('a,'b) m = ('a,'b) mapper
 
 let arity (s,_) = Seq.size s
 let isize (_,u) = U.isize u
@@ -196,7 +194,7 @@ let width _ = assert false      (* not useful on raw terms? *)
 let source = U.source
 let flexible f u = let k = U.arity u in source (Seq.init k f) u
 
-let map f (s,u) = (Seq.imap f.fs s, U.map f.fu u)
+let map f (s,u) = (Seq.imap f.fs s, U.map f u)
 
 let pp mode f (s,u) =
   if mode=Sparse || Seq.forall (fun s -> s#pp_empty mode) s then

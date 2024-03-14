@@ -45,7 +45,6 @@ module S(M: IALGEBRA) =
     end
     type 'a u = 'a U.t
     type 'a t = 'a seq * 'a u
-    type ('a,'b) m = ('a,'b) mapper
     let arity (s,_) = Seq.size s
     let esize (_,u) = U.esize u
     let isize (_,u) = U.isize u
@@ -64,7 +63,7 @@ module S(M: IALGEBRA) =
       if i>k then failwith "forget: not a valid source"
       else if i=k then fgt g
       else fgt (prm (Perm.of_cycle [i;k]) g)
-    let map f (s,u) = (Seq.imap f.fs s, U.map f.fu u)
+    let map f (s,u) = (Seq.imap f.fs s, U.map f u)
     module SI(N: SEALGEBRA) = struct
       module UI = M.I(N.U)
       let eval (s,u) = N.source s (UI.eval u)

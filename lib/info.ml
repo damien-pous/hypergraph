@@ -106,8 +106,7 @@ class virtual eprinter_ =
   end
 class eprinter l = object inherit holder l inherit eprinter_ end
 
-let print_umapper = {fi=new iprinter;fe=new eprinter}
-let print_mapper = {fs=new sprinter;fu=print_umapper}
+let print_mapper = {fs=new sprinter;fi=new iprinter;fe=new eprinter}
 
 
 class virtual draw =
@@ -164,8 +163,7 @@ class edrawer l =
         (match self#get "shift" with Some v -> pos <- p2_of_string v | None -> ());
   end
 
-let draw_umapper = {fi=new idrawer;fe=new edrawer}
-let draw_mapper = {fs=new sdrawer;fu=draw_umapper}
+let draw_mapper = {fs=new sdrawer;fi=new idrawer;fe=new edrawer}
 
 
 let drawable_ivertex p = new idrawer ["pos", string_of_p2 p]

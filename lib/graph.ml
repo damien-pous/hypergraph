@@ -22,7 +22,6 @@ type 'a t = {
     ivertices: 'a set;
     edges: 'a edge set;
   }
-type ('a,'b) m = ('a,'b) umapper
 
 let arity g = g.arity
 let isize g = Set.size g.ivertices

@@ -10,7 +10,6 @@ let ismap f = Set.map (fun (i,x) -> i,f x)
 module M = struct
 
 type 'a t = 'a s
-type ('a,'b) m = ('a,'b) umapper
 
 let arity (k,_) = k
 (* let fp_arity = function *)

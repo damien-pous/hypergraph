@@ -18,6 +18,8 @@ type circle = { center: p2; radius: float } (* circles *)
 type formatter = Format.formatter
 type pp_mode = Full | Sparse
 
+type ('a,'b) mapper = {fs: int -> 'a -> 'b; fi: 'a -> 'b; fe: 'a -> 'b}
+
 class type printable =
   object
     method label: string
@@ -56,18 +58,16 @@ class type picture =
 
 module type BASE = sig
   type 'a t
-  type ('a,'b) m
   val arity: 'a t -> int
   val isize: 'a t -> int
   val esize: 'a t -> int
   val width: 'a t -> int
-  val map: ('a,'b) m -> 'a t -> 'b t
+  val map: ('a,'b) mapper -> 'a t -> 'b t
 end
 
 (* the signature of operations from the paper *)
-type ('a,'b) umapper = {fi: 'a -> 'b; fe: 'a -> 'b}
 module type ALGEBRA = sig
-  include BASE with type ('a,'b) m = ('a,'b) umapper
+  include BASE
   val nil: int -> 'a t
   val par: 'a t -> 'a t -> 'a t
   val fgt: 'a -> 'a t-> 'a t
@@ -102,11 +102,10 @@ module type IEALGEBRA = sig
 end
 
 (* extension with source decorations *)
-type ('a,'b) mapper = {fs: int -> 'a -> 'b; fu: ('a,'b) umapper}
 module type SEALGEBRA = sig
   type 'a u 
   module U: IEALGEBRA with type 'a t = 'a u
-  include BASE with type ('a,'b) m = ('a,'b) mapper
+  include BASE
   val source: 'a seq -> 'a u -> 'a t
 end
 
@@ -130,8 +129,7 @@ module type ISEALGEBRA' = sig
   type 'a u 
   type 'a ru
   module U: IEALGEBRA' with type 'a t = 'a u and type 'a r = 'a ru
-  include BASE with type ('a,'b) m = ('a,'b) mapper
-                and type 'a t = 'a seq * 'a u
+  include BASE with type 'a t = 'a seq * 'a u
   val source: 'a seq -> 'a u -> 'a t
   val size: 'a t -> int
   val nil: unit -> 'a t
