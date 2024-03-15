@@ -5,12 +5,12 @@ type kvl = kv list
 
 val kv: string -> string -> kv
 
-val print_mapper: (kvl, printable) mapper
-val draw_mapper: (kvl, drawable) mapper
+val kvl_to_printable: (kvl, printable) mapper
+val kvl_to_positionned: (kvl, positionned) mapper
 
-val drawable_ivertex: p2 -> drawable
-val drawable_source: int -> p2 -> drawable
-val drawable_edge: int -> label -> drawable
+val positionned_ivertex: point -> positionned
+val positionned_source: int -> point -> positionned
+val positionned_edge: int -> label -> positionned
 
 val same_label_kvl: kvl -> kvl -> bool
 val same_label: #printable -> #printable -> bool

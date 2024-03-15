@@ -34,36 +34,6 @@ let iter_edges'' f g = Set.iter (fun e -> f e e.einfo e.neighbours) g.edges
 let iter_edges' f g = Set.iter (fun e -> f e) g.edges
 let iter_edges f g = Set.iter (fun e -> f e.einfo e.neighbours) g.edges
 
-let ppp f x =
-  let d = 2. *. x#radius /. Constants.inch in
-  Format.fprintf f "width=%f,height=%f,fixedsize=true,label=\"\"" d d;
-  if x#placed then
-    Format.fprintf f ",pos=\"%f,%f\",pin=true" (Gg.P2.x x#pos) (Gg.P2.y x#pos)
-let pp_dot_sparse f g =
-  let ppv f = function
-  | Src i -> Format.fprintf f "s%i" i
-  | Inn x -> Format.fprintf f "i%i" (Set.index x g.ivertices)
-  in
-  Set.iteri (fun id x -> Format.fprintf f "i%i[%a]\n" id ppp x) g.ivertices;
-  Set.iteri (fun id x ->
-      Format.fprintf f "e%i[%a]\n" id ppp x.einfo;
-      Format.fprintf f "e%i--%a\n" id (Seq.pp ppv) x.neighbours
-    ) g.edges
-
-let pp_dot mode f =
-  match mode with Sparse -> pp_dot_sparse f | _ -> failwith "todo"
-  (* let ppv f = function *)
-  (* | Src i -> Format.fprintf f "%i [shape=box]" i *)
-  (* | Inn x -> Format.fprintf f "i%i [shape=circle]" (Set.index x g.ivertices) *)
-  (* in *)
-  (* Set.iteri (fun id x -> Format.fprintf f "i%i %t\n" id (x#pp mode)) g.ivertices; *)
-  (* Set.iteri (fun id x -> *)
-  (*     Format.fprintf f "e%i %t\n" id (x.einfo#pp mode); *)
-  (*       Seq.iter (fun i v -> *)
-  (*         Format.fprintf f "e%i -- %a [label=%i]\n" id ppv v i *)
-  (*       ) x.neighbours *)
-  (*   ) g.edges *)
-
 let nil arity =
   { arity; ivertices = Set.empty; edges = Set.empty }
 
@@ -228,6 +198,9 @@ module U = struct include U0 include U1 include U end
 type 'a graph = 'a t
 type 'a ugraph = 'a u
 
+let sources (s,_) = s
+let ivertices (_,g) = g.U0.ivertices
+let edges (_,g) = g.U0.edges
 let sinfo (s,_) = Seq.get s 
 let vinfo (s,_) = function
   | Src i -> Seq.get s i
@@ -265,6 +238,49 @@ let promote x (s,g) = (Seq.snoc s x, U.promote x g)
 
 let iso cmp (_,g) (_,h) = U.iso cmp g h
 
+let bbox (g: #positionned graph) =  
+  let b = ref Gg.Box2.empty in
+  iter_infos (fun i ->
+      let d = i#radius *. 2. in 
+      b := Gg.Box2.union !b (Gg.Box2.v_mid i#pos (Gg.Size2.v d d));
+    ) g;
+  !b
+
+let draw_on (draw: canvas) (g: #positionned graph) =
+  let npos = Seq.lmap (fun v -> (vinfo g v)#pos) in
+  let draw_source i x =
+    let p = x#pos in
+    let d = 2. *. x#radius in
+    let fill = x#color in
+    draw#box ~fill (Gg.Box2.v_mid p (Gg.Size2.v d d));
+    draw#text p (string_of_int i)
+  in
+  let draw_ivertex x =
+    let c = x#circle in
+    let fill = x#color in
+    draw#circle ~fill c;
+    draw#text x#pos x#label
+  in
+  let draw_edge x n =
+    let c = x#circle in
+    let fill = x#color in
+    draw#path ~fill (Geometry.edge c (npos n));
+    (* draw#circle c; *)
+    draw#text x#pos x#label
+  in
+  (* Geometry.set_debug draw; *)
+  iter_edges draw_edge g;
+  iter_sources draw_source g;
+  iter_ivertices draw_ivertex g;
+  (* draw#box (bbox g); *)
+  (* draw#get *)
+  ()
+
+let draw g =
+  let c = new Picture.basic_canvas in
+  draw_on c g;
+  c#get
+
 let find f g =
   let r = ref `N in
   try
@@ -277,27 +293,3 @@ let get_info (s,g) = function
   | S,i -> Seq.get s i
   | I,i -> Set.nth g.U0.ivertices i
   | E,i -> (Set.nth g.U0.edges i).einfo
-
-let pp_dot_sparse f (s,g) =
-  Format.fprintf f "graph {\n";
-  Seq.iter (fun i x -> Format.fprintf f "s%i[%a]\n" i U.ppp x) s;
-  U.pp_dot_sparse f g;
-  Format.fprintf f "}\n"
-
-let pp_dot mode f =
-  match mode with Sparse -> pp_dot_sparse f | _ -> failwith "todo"
-(* let pp_dot mode f (s,g) = *)
-(*   Format.fprintf f "graph {\n"; *)
-(*   Seq.iter (fun i x -> Format.fprintf f "s%i%a\n" i (x#pp mode)) s; *)
-(*   U.pp_dot mode f g; *)
-(*   Format.fprintf f "}\n" *)
-
-(* let export_gen cmd print file g = *)
-(*   let o = Unix.open_process_out (cmd^" > "^file) in *)
-(*   print o g; *)
-(*   flush o; *)
-(*   let e = Unix.close_process_out o in *)
-(*   if e <> Unix.WEXITED 0 then *)
-(*     failwith ("export failed: "^cmd) *)
-
-(* let export_dot = export_gen "neato -Tpng" print_dot *)

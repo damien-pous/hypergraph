@@ -1,59 +1,59 @@
 open Types
 
 (* debug area *)
-val set_debug: picture -> unit
+val set_debug: canvas -> unit
 val unset_debug: unit -> unit
 
 (* directed lines *)
-val line: p2 -> p2 -> line
-val line': p2 -> v2 -> line
+val line: point -> point -> line
+val line': point -> vector -> line
 
 (* circles *)
-val circle: p2 -> float -> circle
+val circle: point -> float -> circle
 
 (* random point in [-s;s]x[-s;s] *)
-val random2: float -> p2
+val random2: float -> point
 
 (* distance between two points *)
-val dist: p2 -> p2 -> float
+val dist: point -> point -> float
 
 (* is a point inside a drawable element *)
-val inside: p2 -> drawable -> bool
+val inside: point -> positionned -> bool
 
 (* barycenter *)
-val center: p2 list -> p2
+val center: point list -> point
 
 (* center of incircle *)
-val mid3: p2 -> p2 -> p2 -> p2
+val mid3: point -> point -> point -> point
 
 (* directed angle between two vectors *)
-val angle: v2 -> v2 -> float
+val angle: vector -> vector -> float
 
 (* intersection of two lines *)
-val line_inter: line -> line -> p2
+val line_inter: line -> line -> point
 
 (* (directed) distance between a line and a point *)
-val line_dist : line -> p2 -> float
+val line_dist : line -> point -> float
 
 (* orieantations *)
 type lr = L | R
 val swap: lr -> lr
 
 (* side of a point w.r.t. a line *)
-val side: line -> p2 -> lr
+val side: line -> point -> lr
   
 (* [tangent_point x c o] computes the tangents of [c] going through [x],
    and returns the tangent point on side [o] of [xc] *)
-val tangent_point: p2 -> circle -> lr -> p2 * v2
+val tangent_point: point -> circle -> lr -> point * vector
 
 (* [bisect_point x y c] returns the point of [c] bisecting cone [xcy]  *)
-val bisect_point: p2 -> p2 -> circle -> p2 * v2
+val bisect_point: point -> point -> circle -> point * vector
 
-val start: p2 -> path
+val start: point -> path
 
-val curve: circle -> ?lx:bool -> ?ly:bool -> p2 -> p2 -> path
-val edge1: circle -> p2 -> path
-val edge2: circle -> p2 -> p2 -> path
-val edge3: circle -> p2 -> p2 -> p2 -> path
+val curve: circle -> ?lx:bool -> ?ly:bool -> point -> point -> path
+val edge1: circle -> point -> path
+val edge2: circle -> point -> point -> path
+val edge3: circle -> point -> point -> point -> path
 
-val edge: circle -> p2 list -> path
+val edge: circle -> point list -> path

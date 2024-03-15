@@ -5,15 +5,17 @@ type perm = Perm.t          (* finite support permutations *)
 type inj = Inj.t            (* finite support injections *)
 type iseq = ISeq.t          (* increasing sequences *)
 
-type p2 = Gg.p2                 (* 2D points *)
-type v2 = Gg.v2                 (* 2D vectors *)
+type point= Gg.p2               (* 2D points *)
+type vector = Gg.v2             (* 2D vectors *)
+type box = Gg.box2              (* 2D boxes *)
+type line = { point: point; dir: vector }          (* directed lines *)
+type circle = { center: point; radius: float }     (* circles *)
+
 type color = Gg.color           (* colors *)
 type font = Vg.font             (* fonts *)
 type image = Vg.image           (* images *)
 type path = Vg.path             (* paths *)
 
-type line = { point: p2; dir: v2 }          (* directed line *)
-type circle = { center: p2; radius: float } (* circles *)
 
 type formatter = Format.formatter
 type pp_mode = Full | Sparse
@@ -35,33 +37,41 @@ class type printable =
 
 val same_label: #printable -> #printable -> bool
 
-class type drawable =
+class type positionned =
   object
     inherit printable
-    method pos: Gg.p2
+    method pos: point
     method radius: float
     method circle: circle
-    method color: Gg.color
-    method move: Gg.p2 -> unit
+    method color: color
+    method move: point -> unit
     method scale: float -> unit
     method placed: bool (* was the element placed before? *)
   end
 
-class type picture =
+class type canvas =
   object
     method clear: unit
     method get: image
-    method blend: image -> unit
-    method path: ?color:color -> path -> unit
-    method surface: ?color:color -> path -> unit
-    method circle: ?color:color -> circle -> unit
-    method disc: ?color:color -> circle -> unit
-    method point: ?color:color -> p2 -> unit
-    method segment: ?color:color -> p2 -> p2 -> unit 
+    method path: ?color:color -> ?fill:color -> path -> unit
+    method box: ?color:color -> ?fill:color -> box -> unit 
+    method circle: ?color:color -> ?fill:color -> circle -> unit
+    method point: ?color:color -> point -> unit
+    method segment: ?color:color -> point -> point -> unit 
     method line: ?color:color -> line -> unit 
-    method box: ?color:color -> Gg.box2 -> unit 
-    method text: p2 -> string -> unit 
+    method text: point -> string -> unit 
   end
+
+class type arena =
+  object
+    method view: box
+    method ensure: box -> unit
+    method zoom: float -> unit
+    method move: float*float -> unit
+    method resize: float*float -> unit
+    method pointer: point
+  end
+
 
 module type BASE = sig
   type 'a t

@@ -14,7 +14,7 @@ let from_string s =
   try
     let l = Lexing.from_string s in
     let t = Parser.main Lexer.token l in
-    Raw.map Info.print_mapper t
+    Raw.map Info.kvl_to_printable t
   with e -> Format.eprintf "error parsing  %s@." s; raise e
 
 let to_string = Format.kasprintf (fun s -> s) "%a" (Raw.pp Full)

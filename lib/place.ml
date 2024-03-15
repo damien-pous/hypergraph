@@ -37,11 +37,32 @@ let randomly g =
         e#move pos
     ) g
 
+let pp_dot f g =
+  let ppp f x =
+    let d = 2. *. x#radius /. Constants.inch in
+    Format.fprintf f "width=%f,height=%f,fixedsize=true,label=\"\"" d d;
+    if x#placed then
+      Format.fprintf f ",pos=\"%f,%f\",pin=true" (P2.x x#pos) (P2.y x#pos)
+  in
+  let ppv f = function
+  | Src i -> Format.fprintf f "s%i" i
+  | Inn x -> Format.fprintf f "i%i" (Set.index x (ivertices g))
+  in
+  Format.fprintf f "graph {\n";
+  Seq.iter (fun i x -> Format.fprintf f "s%i[%a]\n" i ppp x) (sources g);
+  Set.iteri (fun id x -> Format.fprintf f "i%i[%a]\n" id ppp x) (ivertices g);
+  Set.iteri (fun id x ->
+      Format.fprintf f "e%i[%a]\n" id ppp (einfo x);
+      Format.fprintf f "e%i--%a\n" id (Seq.pp ppv) (neighbours x)
+    ) (edges g);
+  Format.fprintf f "}\n"
+
 let graphviz g =
+  (* neato/fdp/sfdp *)
   let i,o = Unix.open_process "neato -s72" in
   let f = Format.formatter_of_out_channel o in
   let l = Lexing.from_channel i in
-  Format.fprintf f "%a%!" (Graph.pp_dot Sparse) g; close_out o;
+  Format.fprintf f "%a%!" pp_dot g; close_out o;
   let _,l = Parser.dotlines Lexer.dotline l in
   if Unix.close_process (i,o) <> Unix.WEXITED 0 then failwith "warning: neato returned an error";
   List.iter (fun (id,p) -> (Graph.get_info g id)#move p) l

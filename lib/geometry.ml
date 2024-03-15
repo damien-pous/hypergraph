@@ -3,22 +3,7 @@ open Vg
 open Types
 open Misc
 
-class nopic: picture =
-  object
-    method clear = ()
-    method get = I.void
-    method blend _ = ()
-    method path ?color _ = ignore color 
-    method surface ?color _ = ignore color 
-    method circle ?color _ = ignore color 
-    method disc ?color _ = ignore color 
-    method point ?color _ = ignore color 
-    method segment ?color _ _ = ignore color 
-    method line ?color _ = ignore color 
-    method box ?color _ = ignore color 
-    method text _ _ = ()
-  end
-let nopic = new nopic
+let nopic = new Picture.void_canvas
 let debug = ref nopic
 let set_debug pic = debug := pic
 let unset_debug () = debug := nopic

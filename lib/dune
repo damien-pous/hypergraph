@@ -1,6 +1,8 @@
 (library
  (name hypergraphs)
- (libraries vg unix)
+ (libraries vg cairo2-gtk vg.cairo unix)
+ ; cairo2-gtk and vg.cairo only in module gArena
+ ; unix only in module place
  (modules_without_implementation types)
 ; (flags -w -27)
 )

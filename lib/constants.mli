@@ -3,6 +3,8 @@ open Vg
 
 (* number of points in an inch: 72(.27) *)
 val inch: float
+(* number of points in a mm: inch / 25.4 *)
+val mm: float
 
 (* below: always in points *)
 val fontsize : float

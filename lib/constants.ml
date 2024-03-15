@@ -1,6 +1,7 @@
 open Gg
 
 let inch = 72.27
+let mm = inch /. 25.4
 
 (* in points *)
 let fontsize = 11.

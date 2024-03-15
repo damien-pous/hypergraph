@@ -76,9 +76,10 @@ ISeq:        increasing sequences
 
 Types:       shared class & module types (no implementation)
 
+Constants:   constants for drawing graphs
 Info:        informations about vertices & edges
 
-Functor:     functors between module types
+Functor:     functors to generate derived operations & source-decorated operations
 
 Raw:         raw terms, where arity is inferred
 Term:        plain terms, as in the paper
@@ -87,14 +88,16 @@ NTerm:       normalised terms (full prime decomposed)
 Lexer:       lexer
 Parser:      parser (produces raw terms)
 
+Picture:     canvas for drawing & virtual arenas
+Geometry:    geometric utilities to draw edges
+
 Graph:       graphs and associated functions
 
 Conversions: conversion functions between graphs and various kinds of terms
 
-Constants:   constants for drawing graphs
-Geometry:    geometric utilities to draw edges
-Draw:        drawing graphs
 Place:       placing graphs
+
+GArena:      GTK arenas
 
 ## bin
 Hg:          text mode program

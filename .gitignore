@@ -29,5 +29,4 @@ setup.log
 _opam/
 
 # test files
-test.pdf
-test.svg
+test.*

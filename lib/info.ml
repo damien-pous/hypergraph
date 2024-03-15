@@ -106,10 +106,10 @@ class virtual eprinter_ =
   end
 class eprinter _ l = object inherit holder l inherit eprinter_ end
 
-let print_mapper = {fs=new sprinter;fi=new iprinter;fe=new eprinter}
+let kvl_to_printable = {fs=new sprinter;fi=new iprinter;fe=new eprinter}
 
 
-class virtual draw =
+class virtual positioner =
   object(self)
     inherit holder_
     val mutable pos = V2.zero
@@ -133,29 +133,29 @@ class virtual draw =
       (match self#get "color" with Some c -> color <- Constants.color c | None -> ());      
   end
 
-class idrawer l =
+class ipositioner l =
   object(self)
     inherit holder l
     inherit iprinter_
-    inherit! draw
+    inherit! positioner
     initializer
       if not (self#has "radius") then radius <- Constants.iradius
   end
 
-class sdrawer i l =
+class spositioner i l =
   object(self)
     inherit holder l
     inherit sprinter_ i
-    inherit! draw
+    inherit! positioner
     initializer
       if not (self#has "radius") then radius <- Constants.sradius
   end
 
-class edrawer k l =
+class epositioner k l =
   object(self)
     inherit holder l
     inherit eprinter_
-    inherit! draw
+    inherit! positioner
     initializer
       color <- Constants.color' ?color:(get_color l) label;
       if not (self#has "radius") then radius <- Constants.eradius k;
@@ -163,10 +163,10 @@ class edrawer k l =
         (match self#get "shift" with Some v -> pos <- p2_of_string v | None -> ());
   end
 
-let draw_mapper = {fs=new sdrawer;fi=new idrawer;fe=new edrawer}
+let kvl_to_positionned = {fs=new spositioner;fi=new ipositioner;fe=new epositioner}
 
 
-let drawable_ivertex p = new idrawer ["pos", string_of_p2 p]
-let drawable_source i p = new sdrawer i ["pos", string_of_p2 p]
-let drawable_edge k l = new edrawer k ["label", l]
+let positionned_ivertex p = new ipositioner ["pos", string_of_p2 p]
+let positionned_source i p = new spositioner i ["pos", string_of_p2 p]
+let positionned_edge k l = new epositioner k ["label", l]
 
