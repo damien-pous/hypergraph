@@ -1,9 +1,10 @@
-Raw:  directly ISALGEBRA
-
-(N)Term: INIT, ALGEBRA --X--> ISALGEBRA
-	
-Graph: ALGEBRA --E--> EALGEBRA
-                      INIT      --S--> ISALGEBRA
 
 
 
+file format:
+
+// comments
+fontsize=11pt
+linewidth=...
+// initial (sparse) term
+// placed (decorated) term

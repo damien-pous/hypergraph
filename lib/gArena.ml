@@ -53,11 +53,20 @@ class arena ~width ~height ?window da canvas () =
       | _ -> false
 
     val mutable mode = None
-    method private button_release _ =
-      mode <- None; false
-    method private button_press _ =
-      mode <- Some da#misc#pointer; true
-    method private button_motion _ =
+    method private button_release ev =
+      let state = GdkEvent.Button.state ev in
+      let modifiers = Gdk.Convert.modifier state in
+      List.mem `CONTROL modifiers &&
+      (mode <- None; false)
+    method private button_press ev =
+      let state = GdkEvent.Button.state ev in
+      let modifiers = Gdk.Convert.modifier state in
+      List.mem `CONTROL modifiers &&
+      (mode <- Some da#misc#pointer; true)
+    method private button_motion ev =
+      let state = GdkEvent.Motion.state ev in
+      let modifiers = Gdk.Convert.modifier state in
+      List.mem `CONTROL modifiers &&
       match mode with
       | Some(x0,y0) ->
          let (x,y) as p = da#misc#pointer in
