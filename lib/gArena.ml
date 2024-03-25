@@ -47,6 +47,8 @@ class arena ~width ~height ?window da canvas () =
       false
 
     method private scroll ev =
+      let state = GdkEvent.Scroll.state ev in
+      Gdk.Convert.test_modifier `CONTROL state &&
       match GdkEvent.Scroll.direction ev with
       | `UP -> self#zoom 0.9; true
       | `DOWN -> self#zoom 1.1; true
@@ -54,19 +56,18 @@ class arena ~width ~height ?window da canvas () =
 
     val mutable mode = None
     method private button_release ev =
-      let state = GdkEvent.Button.state ev in
-      let modifiers = Gdk.Convert.modifier state in
-      List.mem `CONTROL modifiers &&
+      ignore ev;
+      (* let state = GdkEvent.Button.state ev in *)
+      (* Gdk.Convert.test_modifier `CONTROL state && *)
       (mode <- None; false)
     method private button_press ev =
       let state = GdkEvent.Button.state ev in
-      let modifiers = Gdk.Convert.modifier state in
-      List.mem `CONTROL modifiers &&
+      Gdk.Convert.test_modifier `CONTROL state &&
       (mode <- Some da#misc#pointer; true)
-    method private button_motion ev =
-      let state = GdkEvent.Motion.state ev in
-      let modifiers = Gdk.Convert.modifier state in
-      List.mem `CONTROL modifiers &&
+    method private motion_notify ev =
+      ignore ev;
+      (* let state = GdkEvent.Motion.state ev in *)
+      (* Gdk.Convert.test_modifier `CONTROL state && *)
       match mode with
       | Some(x0,y0) ->
          let (x,y) as p = da#misc#pointer in
@@ -77,7 +78,7 @@ class arena ~width ~height ?window da canvas () =
     method enable_moves =
      let _ = da#event#connect#button_press ~callback:self#button_press in
      let _ = da#event#connect#button_release ~callback:self#button_release in
-     let _ = da#event#connect#motion_notify ~callback:self#button_motion in
+     let _ = da#event#connect#motion_notify ~callback:self#motion_notify in
      GtkBase.Widget.add_events da#as_widget [ `BUTTON_MOTION; `BUTTON_PRESS; `BUTTON_RELEASE ]      
     
     initializer

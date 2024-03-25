@@ -86,7 +86,8 @@ let ivertex() =
   v
 
 let button_press ev =
-  GdkEvent.Button.state ev = 0 &&
+  let state = GdkEvent.Button.state ev in
+  not (Gdk.Convert.test_modifier `CONTROL state) &&
   match !mode, catch() with
    | `Normal, `V x -> active := `V x; true
    | `Normal, `E x -> active := `E x; true
@@ -99,8 +100,7 @@ let button_press ev =
 let button_release _ =
   active := `N; false
 
-let motion_notify ev =
-  GdkEvent.Motion.state ev = 256 &&
+let motion_notify _ =
   match !active with
   | `V v ->
      (Graph.vinfo !graph v)#move arena#pointer;
