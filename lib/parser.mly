@@ -1,5 +1,5 @@
 %token LPAR RPAR LT GT COMMA SEMI STAR SERIES DOT QUOTE SHARP
-%token PAR NIL LFT FGT EOF
+%token PAR NIL LFT FGT SIM EOF
 %token <Types.label> LABEL
 %token <Types.perm> PRM
 %token <Types.inj> INJ
@@ -11,8 +11,12 @@
 %nonassoc LFT FGT PRM INJ
 %right QUOTE
 
-%type <Info.kvl Raw.t> main
-%start main
+%type <Info.kvl Raw.t> sterm
+%start sterm
+
+%type <Info.kvl Raw.t list> file
+%start file
+
 
 
 (* for parsing dot files and extracting positions *)
@@ -48,14 +52,16 @@ kvl:
 | LT; h=separated_list(SEMI, KEYVAL); k=kvl GT { h @ k }
 | { [] }
 
-sterm:
+sterm_:
 | k=FIX; t=term { source (Seq.init k (fun _ -> [])) t }
 | t=term { flexible (fun _ -> []) t }
 | SHARP; h=separated_nonempty_list(COMMA, kvl); t=term {source (Seq.of_list h) t}
 
-main:
-| t=sterm; EOF { t }
+sterm:
+| t=sterm_; EOF { t }
 
+file:
+| l=separated_nonempty_list(SIM, sterm_); EOF { l }
 
 (* dot files *)
 dotlines:

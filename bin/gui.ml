@@ -57,7 +57,7 @@ let relabel msg =
 let set_graph _ =
   try
     let l = Lexing.from_string entry#text in
-    let r = Parser.main Lexer.token l in
+    let r = Parser.sterm Lexer.token l in
     let r = Raw.map Info.kvl_to_positionned r in
     let t = term_of_raw r in
     let n = nterm_of_raw r in

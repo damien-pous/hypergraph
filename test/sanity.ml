@@ -13,7 +13,7 @@ open Conversions
 let from_string s =
   try
     let l = Lexing.from_string s in
-    let t = Parser.main Lexer.token l in
+    let t = Parser.sterm Lexer.token l in
     Raw.map Info.kvl_to_printable t
   with e -> Format.eprintf "error parsing  %s@." s; raise e
 

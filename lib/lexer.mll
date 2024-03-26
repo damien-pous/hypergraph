@@ -39,6 +39,7 @@ let skip = [^ ';']* ';'
 
 rule token = parse
   | blank                                  { token lexbuf }
+  | "//"                                   { comment lexbuf }
   | '0'                                    { NIL }
   | 'f'                                    { FGT }
   | 'l'                                    { LFT }
@@ -53,6 +54,7 @@ rule token = parse
   | '''                                    { QUOTE }
   | ';'                                    { SEMI }
   | '*'                                    { STAR }
+  | '~'                                    { SIM }
   (* cycles&permutations: at least two elements, if comma then arbitrary ints, otherwise digits *)
   | '(' (ndigit ndigit+ as s) ')'          { PRM (Perm.of_cycle (diglist_of_string s)) }
   | '(' (nint as x) ((',' nint)+ as q) ')' { PRM (Perm.of_cycle (numlist_of_string x q)) }
@@ -75,6 +77,10 @@ rule token = parse
   | eof                                    { EOF }
   | _ as c                                 { Printf.kprintf failwith "lexing error near `%c'" c }
 
+and comment = parse
+  | '\n'                                   { token lexbuf }
+  | eof                                    { EOF }
+  | _                                      { comment lexbuf }
 
 (* for extracting positions in dot files *)
 and dotline = parse
