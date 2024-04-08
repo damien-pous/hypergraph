@@ -17,6 +17,15 @@ val einfo: 'a edge -> 'a
 val sinfo: 'a graph -> int -> 'a
 val vinfo: 'a graph -> 'a vertex -> 'a
 
+val is_full: 'a graph -> bool
+val is_prime: 'a graph -> bool
+val is_atomic: 'a graph -> bool
+val is_empty: 'a graph -> bool
+
+val components: 'a graph -> 'a graph set
+
+val treewidth: 'a graph -> int
+
 val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a graph -> unit
 val iter_edges': ('a edge -> unit) -> 'a graph -> unit
 val iter_edges'': ('a edge -> 'a -> 'a vertex seq -> unit) -> 'a graph -> unit
@@ -53,6 +62,23 @@ val get_info: 'a graph -> kind*int -> 'a
 module U: sig
   (* variants of the above functions on source-decoration-free graphs *)
   include IEALGEBRA' with type 'a t = 'a ugraph and type 'a r = 'a Raw.u
+
+  val is_full: 'a ugraph -> bool
+  val is_prime: 'a ugraph -> bool
+  val is_atomic: 'a ugraph -> bool
+  val is_empty: 'a ugraph -> bool
+  
+  val components: 'a ugraph -> 'a ugraph set
+  (* decompose a graph g into an injection i and a full graph g' such that g = {i}g' *)
+  val reduce: 'a ugraph -> iseq * 'a ugraph 
+  val reduced_components: 'a ugraph -> (iseq * 'a ugraph) set
+
+  val treewidth: 'a ugraph -> int
+  (* val forget_points: 'a ugraph -> int -> 'a set   *)
+  (* val is_anchor: 'a ugraph -> 'a -> bool *)
+  (* val is_hard: 'a ugraph -> bool *)
+  (* val find_anchor: 'a ugraph -> 'a option *)
+ 
   val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a ugraph -> unit
   val iter_edges': ('a edge -> unit) -> 'a ugraph -> unit
   val iter_edges'': ('a edge -> 'a -> 'a vertex seq -> unit) -> 'a ugraph -> unit

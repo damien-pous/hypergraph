@@ -24,6 +24,8 @@ let id k = List.init k (fun i -> i+1)
 
 let empty = []
 
+let filter = List.filter
+
 let rec merge h k = match h,k with
   | [],k -> k
   | h,[] -> h
@@ -35,8 +37,10 @@ let rec index t i =
   match t with
   | j::q when j<i -> 1+index q i
   | j::_ when j=i -> 1
-  | _ -> failwith "ISeq.reindex: not a subsequence"
-let reindex s t = List.map (index t) s
+  | _ -> raise Not_found
+let reindex s t =
+  try List.map (index t) s
+  with Not_found -> failwith "ISeq.reindex: not a subsequence"
 
 let rec crop = function
   | [] | [_] -> []

@@ -5,7 +5,11 @@ type t
 
 val of_list: int list -> t
 
+(* does an element belong to a sequence *)
 val mem: int -> t -> bool
+
+(* [index s i] returns the index of i in s; raises Not_founf if i does not appear in s *)
+val index: t -> int -> int
 
 (* [3;4] -> {1->3,2->4}*)
 val to_inj: t -> Inj.t
@@ -23,6 +27,9 @@ val merge: t -> t -> t
 
 (* identity sequence *)
 val id: int -> t
+
+(* filtering elements from a sequence *)
+val filter: (int -> bool) -> t -> t
 
 (* assuming s is contained in t, [reindex s t] returns the sequence r such that s = t ° r
    e.g., reindex [2;6] [2;4;5;6] = [1;4] *)

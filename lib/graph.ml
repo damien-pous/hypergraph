@@ -28,6 +28,66 @@ let isize g = Set.size g.ivertices
 let esize g = Set.size g.edges
 let width _ = failwith "todo"
 
+let is_empty g =
+  Set.is_empty g.ivertices && Set.is_empty g.edges
+let is_atomic g =
+  Set.is_empty g.ivertices && Set.size g.edges = 1 &&
+    Set.forall (fun e -> Seq.size e.neighbours = g.arity) g.edges
+let touched_sources g =
+  ISeq.filter
+    (fun i -> Set.exists (fun e -> Seq.mem (Src i) e.neighbours) g.edges)
+    (ISeq.id g.arity)
+let is_full g = ISeq.size (touched_sources g) = arity g
+
+let components g =
+  let add_neighbours x todo =
+    match x with
+      | `E e -> Seq.fold
+                  (function Inn v -> Set.add (`V v) | _ -> fun acc -> acc)
+                  e.neighbours todo
+      | `V v -> Set.fold
+                  (fun e -> if Seq.mem (Inn v) e.neighbours then Set.add (`E e) else fun acc -> acc)
+                  todo g.edges
+  in
+  let rec c acc todo = match Set.case todo with
+    | None -> acc
+    | Some(x,todo) ->
+       if Set.mem x acc then c acc todo
+       else c (Set.add x acc) (add_neighbours x todo)
+  in
+  let lonely_edges =
+    Set.fold (fun e ->
+        if Seq.forall (function Src _ -> true | _ -> false) e.neighbours then
+          Set.add { g with ivertices=Set.empty; edges=Set.single e }
+        else fun acc -> acc
+      ) Set.empty g.edges
+  in
+  fst (Set.fold
+         (fun v (acc,seen) ->
+           if Set.mem v seen then (acc,seen)
+           else let c = c Set.empty (Set.single (`V v)) in
+                let ivertices = Set.omap (function `V v -> Some v | _ -> None) c in
+                let edges = Set.omap (function `E e -> Some e | _ -> None) c in                
+                let acc = Set.add { g with ivertices; edges } acc in
+                acc, Set.union ivertices seen)
+         (lonely_edges,Set.empty) g.ivertices)
+  
+let is_prime g = Set.size (components g) = 1
+
+let src_map f = function
+  | Src i -> Src (f i)
+  | x -> x
+
+let reduce g =
+  let s = touched_sources g in
+  let i = ISeq.reindex s (ISeq.id g.arity) in
+  let g = { g with
+            arity = ISeq.size i;
+            edges = nmap (src_map (ISeq.index i)) g.edges } in
+  (i,g)
+  
+let reduced_components g = Set.map reduce (components g)
+
 let edges g = g.edges
 let iter_ivertices f g = Set.iter f g.ivertices
 let iter_edges'' f g = Set.iter (fun e -> f e e.einfo e.neighbours) g.edges
@@ -56,10 +116,6 @@ let fgt z g =
                | Src i when i=k -> z'
                | x -> x)
               g.edges }
-
-let src_map f = function
-  | Src i -> Src (f i)
-  | x -> x
 
 let prm p g =
   { g with
@@ -126,6 +182,18 @@ let promote x g =
                | v -> v)
               g.edges }
 
+let treewidth g =
+  let n = arity g + Set.size g.ivertices in 
+  let rec treewidth g =
+    if is_empty g || is_atomic g then arity g - 1
+    else let cs = reduced_components g in
+         max (arity g - 1)
+           (match Set.size cs with
+            | 1 -> Set.fold (fun v -> min (treewidth (promote v g))) n g.ivertices
+            | _ -> Set.fold max (-1) (Set.map (fun (_,c) -> treewidth c) cs))
+  in treewidth g
+
+
 (* checking isomorphism
    naively for now: just try to match edges in all possible ways *)
 let iso cmp g h =
@@ -158,7 +226,7 @@ let iso cmp g h =
     (*   (Set.pp (fun f (x,y) -> Format.fprintf f "%a--%a" I.pp x I.pp y)) r; *)
     match Set.case h with
     | None -> assert (Set.is_empty k); true
-    | Some(x,h) -> Set.exists (fun y k ->
+    | Some(x,h) -> Set.exists_split (fun y k ->
                        match extend r x y with
                        | Some r -> iso h k r
                        | None -> false
@@ -205,6 +273,14 @@ let sinfo (s,_) = Seq.get s
 let vinfo (s,_) = function
   | Src i -> Seq.get s i
   | Inn x ->  x
+
+let is_empty (_,g) = U.is_empty g
+let is_full (_,g) = U.is_full g
+let is_atomic (_,g) = U.is_atomic g
+let is_prime (_,g) = U.is_prime g
+let components (s,g) = Set.map (fun g -> (s,g)) (U.components g)
+let treewidth (_,g) = U.treewidth g
+
 let iter_edges f (_,g) = U.iter_edges f g
 let iter_edges' f (_,g) = U.iter_edges' f g
 let iter_edges'' f (_,g) = U.iter_edges'' f g

@@ -11,6 +11,11 @@ let union x y =
   | _ -> U (x,y)
 let add a = union (single a)
 
+let rec mem a = function
+  | N -> false
+  | S b -> a=b
+  | U(x,y) -> mem a x || mem a y
+
 let rec filter f = function
   | S i as x when f i -> x
   | U(x,y) -> union (filter f x) (filter f y)
@@ -26,11 +31,20 @@ let case x =
 let is_empty l = l = N
 
 let exists f =
-  let rec exists acc = function
+  let rec exists = function
+    | N -> false
+    | S x -> f x
+    | U(x,y) -> exists x || exists y
+  in exists
+
+let forall f l = not (exists (fun x -> not (f x)) l)
+
+let exists_split f =
+  let rec ex acc = function
     | N -> false
     | S x -> f x acc
-    | U(x,y) -> exists (union x acc) y || exists (union y acc) x
-  in exists N
+    | U(x,y) -> ex (union x acc) y || ex (union y acc) x
+  in ex N
 
 let rec partition f = function
   | S i as x -> if f i then N,x else x,N
@@ -49,6 +63,11 @@ let rec map f = function
   | N -> N
   | S i -> S (f i)
   | U(x,y) -> U (map f x, map f y)
+
+let rec omap f = function
+  | N -> N
+  | U(x,y) -> union (omap f x) (omap f y)
+  | S i -> match f i with Some j -> S j | _ -> N
 
 let rec iter f = function
   | N -> ()

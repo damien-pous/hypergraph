@@ -20,7 +20,7 @@ let vbox = GPack.vbox ~homogeneous:false ~packing:window#add ()
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
 let entry = GEdit.entry ~text ~editable:true ~packing:(vbox#pack ~expand:false) ()
-let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:80 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
+let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:100 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
 
 let export_pdf () =
   let view = Graph.bbox !graph in
@@ -43,8 +43,13 @@ let relabel msg =
   let t = raw_of_graph g in
   let n = normalise (term_of_raw t) in
   Format.kasprintf label#set_label
-    "%sExtracted term: %a\nNormalised term: %a" msg
-    (Raw.pp Sparse) t (NTerm.pp Sparse) n;
+    "%sExtracted term: %a\nNormalised term: %a\nTreewidth: %i\n%t" msg
+    (Raw.pp Sparse) t (NTerm.pp Sparse) n
+    (Graph.treewidth g)
+    (fun f -> match Set.size (Graph.components g) with
+              | 0 -> Format.fprintf f "Empty"
+              | 1 -> Format.fprintf f "Prime"
+              | n -> Format.fprintf f "%i components" n);
   let _ = Graph.iso Info.same_label g (graph_of_raw t) ||
             (Format.eprintf "%a" (Graph.pp Sparse) g;
              failwith "Mismatch between graph and extracted term")
@@ -61,12 +66,17 @@ let set_graph _ =
     let r = Raw.map Info.kvl_to_positionned r in
     let t = term_of_raw r in
     let n = nterm_of_raw r in
+    let g = graph_of_raw r in
     Format.kasprintf label#set_label
-      "Parsed term: %a\nPlain term: %a\nNormalised term: %a"
+      "Parsed term: %a\nPlain term: %a\nNormalised term: %a\nTreewidth: %i\n%t"
       (Raw.pp Sparse) r
       (Term.pp Sparse) t
-      (NTerm.pp Sparse) n;
-    let g = graph_of_raw r in
+      (NTerm.pp Sparse) n
+      (Graph.treewidth g)
+      (fun f -> match Set.size (Graph.components g) with
+      | 0 -> Format.fprintf f "Empty"
+      | 1 -> Format.fprintf f "Prime"
+      | n -> Format.fprintf f "%i components" n);
     Place.sources_on_circle g;
     Place.graphviz g;
     graph := g;
