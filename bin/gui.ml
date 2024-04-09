@@ -48,8 +48,15 @@ let relabel msg =
     (Graph.treewidth g)
     (fun f -> match Set.size (Graph.components g) with
               | 0 -> Format.fprintf f "Empty"
-              | 1 -> Format.fprintf f "Prime"
-              | n -> Format.fprintf f "%i components" n);
+              | 1 -> (
+                if Graph.is_full g then
+                  if Graph.is_hard g then Format.fprintf f "Hard"
+                  else Format.fprintf f "Full prime"
+                else Format.fprintf f "Prime"
+              )
+              | n ->
+                 if Graph.is_full g then Format.fprintf f "Full, ";
+                 Format.fprintf f "%i components" n);
   let _ = Graph.iso Info.same_label g (graph_of_raw t) ||
             (Format.eprintf "%a" (Graph.pp Sparse) g;
              failwith "Mismatch between graph and extracted term")

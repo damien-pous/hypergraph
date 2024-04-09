@@ -5,6 +5,9 @@ type t
 
 val of_list: int list -> t
 
+(* nth element of the sequence, starting from index 1 *)
+val get: t -> int -> int
+
 (* does an element belong to a sequence *)
 val mem: int -> t -> bool
 
@@ -43,6 +46,5 @@ val crop: t -> t
    reorders it to make it increasing,
    and returns the corresponding permutation *)
 val map: Perm.t -> t -> t * Perm.t
-
 
 val pp: Format.formatter -> t -> unit

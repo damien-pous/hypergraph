@@ -8,6 +8,8 @@ let to_inj = Inj.of_list
 
 let pp f i = Inj.pp f (to_inj i)
 
+let get i x = List.nth i (x-1)
+
 let rec check = function
   | [] -> true
   | x::q -> x>0 && (List.for_all ((<) x) q) && check q

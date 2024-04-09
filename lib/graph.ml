@@ -73,6 +73,7 @@ let components g =
          (lonely_edges,Set.empty) g.ivertices)
   
 let is_prime g = Set.size (components g) = 1
+let is_fullprime g = is_full g && is_prime g
 
 let src_map f = function
   | Src i -> Src (f i)
@@ -193,7 +194,19 @@ let treewidth g =
             | _ -> Set.fold max (-1) (Set.map (fun (_,c) -> treewidth c) cs))
   in treewidth g
 
+let is_forget_point g k x = treewidth (promote x g) <= k
+let find_forget_point g k = Set.find (is_forget_point g k) g.ivertices
+let forget_points g k = Set.filter (is_forget_point g k) g.ivertices
 
+let is_anchor g x =
+  let n = Seq.snoc (Seq.init (arity g) src) (Inn x) in
+  Set.exists (fun e -> Seq.forall (fun x -> Seq.mem x e.neighbours) n) g.edges ||
+    Set.size (Set.filter is_full (components (promote x g))) <> 1
+let find_anchor g = Set.find (is_anchor g) g.ivertices
+let anchors g = Set.filter (is_anchor g) g.ivertices
+
+let is_hard g = is_fullprime g && find_anchor g = None
+  
 (* checking isomorphism
    naively for now: just try to match edges in all possible ways *)
 let iso cmp g h =
@@ -274,17 +287,30 @@ let vinfo (s,_) = function
   | Src i -> Seq.get s i
   | Inn x ->  x
 
-let is_empty (_,g) = U.is_empty g
-let is_full (_,g) = U.is_full g
-let is_atomic (_,g) = U.is_atomic g
-let is_prime (_,g) = U.is_prime g
-let components (s,g) = Set.map (fun g -> (s,g)) (U.components g)
-let treewidth (_,g) = U.treewidth g
+let sext f (_,g) = f g
 
-let iter_edges f (_,g) = U.iter_edges f g
-let iter_edges' f (_,g) = U.iter_edges' f g
-let iter_edges'' f (_,g) = U.iter_edges'' f g
-let iter_ivertices f (_,g) = U.iter_ivertices f g
+let is_empty x = sext U.is_empty x
+let is_full x = sext U.is_full x
+let is_prime x = sext U.is_prime x
+let is_fullprime x = sext U.is_fullprime x
+let is_atomic x = sext U.is_atomic x
+let is_hard x = sext U.is_hard x
+
+let components (s,g) = Set.map (fun g -> (s,g)) (U.components g)
+let treewidth x = sext U.treewidth x
+
+let is_forget_point x = sext U.is_forget_point x
+let forget_points x = sext U.forget_points x
+let find_forget_point x = sext U.find_forget_point x
+
+let is_anchor x = sext U.is_anchor x
+let anchors x = sext U.anchors x
+let find_anchor x = sext U.find_anchor x
+
+let iter_edges f = sext (U.iter_edges f)
+let iter_edges' f = sext (U.iter_edges' f)
+let iter_edges'' f = sext (U.iter_edges'' f)
+let iter_ivertices f = sext (U.iter_ivertices f)
 let iter_sources f (s,_) = Seq.iter f s
 let iter_vertices f g =
   iter_sources (fun i _ -> f (src i)) g;
@@ -311,6 +337,13 @@ let rem_vertex = function
   | Src i -> rem_source i
   | Inn x -> rem_ivertex x
 let promote x (s,g) = (Seq.snoc s x, U.promote x g)
+
+let reduce (s,g) =
+  let i,g = U.reduce g in
+  let s = Seq.init (ISeq.size i) (fun x -> Seq.get s (ISeq.get i x)) in
+  i,(s,g)
+
+let reduced_components g = Set.map reduce (components g)
 
 let iso cmp (_,g) (_,h) = U.iso cmp g h
 

@@ -19,10 +19,22 @@ val vinfo: 'a graph -> 'a vertex -> 'a
 
 val is_full: 'a graph -> bool
 val is_prime: 'a graph -> bool
+val is_fullprime: 'a graph -> bool
 val is_atomic: 'a graph -> bool
 val is_empty: 'a graph -> bool
+val is_hard: 'a graph -> bool
 
 val components: 'a graph -> 'a graph set
+val reduce: 'a graph -> iseq * 'a graph 
+val reduced_components: 'a graph -> (iseq * 'a graph) set
+
+val is_forget_point: 'a graph -> int -> 'a -> bool
+val find_forget_point: 'a graph -> int -> 'a option
+val forget_points: 'a graph -> int -> 'a set
+
+val is_anchor: 'a graph -> 'a -> bool
+val find_anchor: 'a graph -> 'a option
+val anchors: 'a graph -> 'a set
 
 val treewidth: 'a graph -> int
 
@@ -65,8 +77,10 @@ module U: sig
 
   val is_full: 'a ugraph -> bool
   val is_prime: 'a ugraph -> bool
+  val is_fullprime: 'a ugraph -> bool
   val is_atomic: 'a ugraph -> bool
   val is_empty: 'a ugraph -> bool
+  val is_hard: 'a ugraph -> bool
   
   val components: 'a ugraph -> 'a ugraph set
   (* decompose a graph g into an injection i and a full graph g' such that g = {i}g' *)
@@ -74,10 +88,13 @@ module U: sig
   val reduced_components: 'a ugraph -> (iseq * 'a ugraph) set
 
   val treewidth: 'a ugraph -> int
-  (* val forget_points: 'a ugraph -> int -> 'a set   *)
-  (* val is_anchor: 'a ugraph -> 'a -> bool *)
-  (* val is_hard: 'a ugraph -> bool *)
-  (* val find_anchor: 'a ugraph -> 'a option *)
+
+  val is_forget_point: 'a ugraph -> int -> 'a -> bool
+  val forget_points: 'a ugraph -> int -> 'a set
+  
+  val is_anchor: 'a ugraph -> 'a -> bool
+  val find_anchor: 'a ugraph -> 'a option
+  val anchors: 'a ugraph -> 'a set
  
   val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a ugraph -> unit
   val iter_edges': ('a edge -> unit) -> 'a ugraph -> unit

@@ -46,6 +46,13 @@ let exists_split f =
     | U(x,y) -> ex (union x acc) y || ex (union y acc) x
   in ex N
 
+let find f =
+  let rec find = function
+    | S x when f x -> Some x
+    | U(x,y) -> (match find x with None -> find y | o -> o)
+    | _ -> None
+  in find
+
 let rec partition f = function
   | S i as x -> if f i then N,x else x,N
   | U(x,y) ->

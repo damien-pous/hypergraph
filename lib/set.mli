@@ -26,6 +26,7 @@ val iter: ('a -> unit) -> 'a t -> unit
 val fold: ('a -> 'b -> 'b) -> 'b -> 'a t -> 'b
 val exists: ('a -> bool) -> 'a t -> bool
 val forall: ('a -> bool) -> 'a t -> bool
+val find: ('a -> bool) -> 'a t -> 'a option
 
 val iteri: (int -> 'a -> unit) -> 'a t -> unit
 val index: 'a -> 'a t -> int
