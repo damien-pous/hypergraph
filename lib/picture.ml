@@ -4,6 +4,17 @@ open Vg
 
 let area = `O { P.o with P.width = Constants.linewidth }
 
+let pentagon c r =
+  let r = V2.smul r V2.oy in
+  let p i = V2.add c (V2.ltr (M2.rot2 (i *. Float.pi /. 2.5)) r) in
+  P.empty |>
+    P.sub (p 0.) |>
+    P.line (p 1.) |>
+    P.line (p 2.) |>
+    P.line (p 3.) |>
+    P.line (p 4.) |>
+    P.close
+
 class basic_canvas: canvas =
   object(self)
     val mutable image = I.void
@@ -15,6 +26,8 @@ class basic_canvas: canvas =
       self#blend (I.const color |> I.cut ~area p)
     method circle ?color ?fill c =
       self#path ?color ?fill (P.empty |> P.circle c.center c.radius)
+    method pentagon ?color ?fill c =
+      self#path ?color ?fill (pentagon c.center c.radius)
     method box ?color ?fill b =
       self#path ?color ?fill (P.empty |> P.rect b)
     method point ?color p =
@@ -39,6 +52,7 @@ class void_canvas: canvas =
     method get = I.void
     method path ?color ?fill _ = ignore (color,fill) 
     method circle ?color ?fill _ = ignore (color,fill) 
+    method pentagon ?color ?fill _ = ignore (color,fill) 
     method box ?color ?fill _ = ignore (color,fill) 
     method point ?color _ = ignore color 
     method segment ?color _ _ = ignore color 

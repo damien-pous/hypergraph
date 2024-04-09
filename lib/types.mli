@@ -44,6 +44,7 @@ class type positionned =
     method radius: float
     method circle: circle
     method color: color
+    method set_color: color -> unit
     method move: point -> unit
     method scale: float -> unit
     method placed: bool (* was the element placed before? *)
@@ -56,6 +57,7 @@ class type canvas =
     method path: ?color:color -> ?fill:color -> path -> unit
     method box: ?color:color -> ?fill:color -> box -> unit 
     method circle: ?color:color -> ?fill:color -> circle -> unit
+    method pentagon: ?color:color -> ?fill:color -> circle -> unit
     method point: ?color:color -> point -> unit
     method segment: ?color:color -> point -> point -> unit 
     method line: ?color:color -> line -> unit 

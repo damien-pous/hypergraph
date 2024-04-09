@@ -59,8 +59,8 @@ val add_ivertex: 'a -> 'a graph -> 'a graph
 (* isomorphim check, using the given function to compare edge infos *)
 val iso: ('a -> 'a -> bool) -> 'a graph -> 'a graph -> bool
 
-val draw_on: canvas -> #positionned graph -> unit
-val draw: #positionned graph -> image
+val draw_on: canvas -> ?iprops:bool -> #positionned graph -> unit
+val draw: ?iprops:bool -> #positionned graph -> image
 
 val bbox: #positionned graph -> box
 

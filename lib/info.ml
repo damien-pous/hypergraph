@@ -121,6 +121,7 @@ class virtual positioner =
     method radius = radius
     method circle = {center = pos; radius}
     method color = color
+    method set_color c = color <- c
     method placed = placed    
     method move p = pos <- p; placed <- true
     method scale s = radius <- radius *. s; scaled <- true

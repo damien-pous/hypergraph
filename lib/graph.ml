@@ -355,7 +355,8 @@ let bbox (g: #positionned graph) =
     ) g;
   !b
 
-let draw_on (draw: canvas) (g: #positionned graph) =
+let draw_on (draw: canvas) ?(iprops=false) (g: #positionned graph) =
+  let iprops = if iprops && is_fullprime g then Some (treewidth g) else None in
   let npos = Seq.lmap (fun v -> (vinfo g v)#pos) in
   let draw_source i x =
     let p = x#pos in
@@ -366,8 +367,14 @@ let draw_on (draw: canvas) (g: #positionned graph) =
   in
   let draw_ivertex x =
     let c = x#circle in
-    let fill = x#color in
-    draw#circle ~fill c;
+    let shape,fill =
+      match iprops with
+      | Some k when is_forget_point g k x ->
+         draw#pentagon,
+         if is_anchor g x then Constants.anchor_color else x#color
+      | _ -> draw#circle,x#color
+    in
+    shape ~fill c;
     draw#text x#pos x#label
   in
   let draw_edge x n =
@@ -385,9 +392,9 @@ let draw_on (draw: canvas) (g: #positionned graph) =
   (* draw#get *)
   ()
 
-let draw g =
+let draw ?iprops g =
   let c = new Picture.basic_canvas in
-  draw_on c g;
+  draw_on c ?iprops g;
   c#get
 
 let find f g =

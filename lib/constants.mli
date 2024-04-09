@@ -19,3 +19,5 @@ val linewidth : float
 val gray : color
 val color : string -> color
 val color' : ?color:color -> string -> color
+
+val anchor_color: color
