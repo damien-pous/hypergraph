@@ -1,5 +1,4 @@
 open Hypergraphs
-open Misc
 open Conversions
 
 open GMain
@@ -20,7 +19,15 @@ let vbox = GPack.vbox ~homogeneous:false ~packing:window#add ()
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
 let entry = GEdit.entry ~text ~editable:true ~packing:(vbox#pack ~expand:false) ()
-let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:100 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
+let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:40 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
+
+
+let current_term k =
+  try
+    let l = Lexing.from_string entry#text in
+    let t = Parser.sterm Lexer.token l in
+    Some (Raw.map Info.kvl_to_positionned t)
+  with e -> k e; None
 
 let export_pdf () =
   let view = Graph.bbox !graph in
@@ -38,66 +45,57 @@ let redraw() =
   Graph.draw_on canvas ~iprops:true !graph;
   arena#refresh
 
-let pp_graph_infos f g =
-  Format.fprintf f "Treewidth: %i\n" (Graph.treewidth g);
-  match Set.size (Graph.components g) with
-  | 0 -> Format.fprintf f "Empty"
-  | 1 -> (
-    if Graph.is_full g then
-      if Graph.is_hard g then Format.fprintf f "Hard"
-      else Format.fprintf f "Full prime"
-    else Format.fprintf f "Prime"
-  )
-  | n ->
-     if Graph.is_full g then Format.fprintf f "Full, ";
-     Format.fprintf f "%i components" n
-
-let relabel msg =
-  let g = !graph in
-  let t = raw_of_graph g in
-  let n = normalise (term_of_raw t) in
-  Format.kasprintf label#set_label
-    "%sExtracted term: %a\nNormalised term: %a\n%a" msg
-    (Raw.pp Sparse) t (NTerm.pp Sparse) n pp_graph_infos g;
-  let _ = Graph.iso Info.same_label g (graph_of_raw t) ||
-            (Format.eprintf "%a" (Graph.pp Sparse) g;
-             failwith "Mismatch between graph and extracted term")
+let set_graph_infos g =
+  let pp_graph_infos f =
+    Format.fprintf f "Treewidth: %i\n" (Graph.treewidth g);
+    match Set.size (Graph.components g) with
+    | 0 -> Format.fprintf f "Empty"
+    | 1 -> (
+      if Graph.is_full g then
+        if Graph.is_hard g then Format.fprintf f "Hard"
+        else Format.fprintf f "Full prime"
+      else Format.fprintf f "Prime"
+    )
+    | n ->
+       if Graph.is_full g then Format.fprintf f "Full, ";
+       Format.fprintf f "%i components" n
   in
-  let _ = Graph.iso Info.same_label g (graph_of_nterm n) ||
-            failwith "Mismatch between graph and normalised term"
-  in
-  ()
+  Format.kasprintf label#set_label "%t" pp_graph_infos
 
-let set_graph _ =
-  try
-    let l = Lexing.from_string entry#text in
-    let r = Parser.sterm Lexer.token l in
-    let r = Raw.map Info.kvl_to_positionned r in
-    let t = term_of_raw r in
-    let n = nterm_of_raw r in
-    let g = graph_of_raw r in
-    Format.kasprintf label#set_label
-      "Parsed term: %a\nPlain term: %a\nNormalised term: %a\n%a"
-      (Raw.pp Sparse) r
-      (Term.pp Sparse) t
-      (NTerm.pp Sparse) n
-      pp_graph_infos g;
-    Place.sources_on_circle g;
-    Place.graphviz g;
-    graph := g;
-    active := `N;
-    canvas#clear;
-    Graph.draw_on canvas ~iprops:true g;
-    arena#ensure (Graph.bbox g)
-  with e -> relabel "Parsing error\n"; raise e
+
+let set_graph g =
+  graph := g;
+  redraw();
+  if (match current_term (fun _ -> ()) with
+      | Some t -> not (Graph.iso Info.same_label g (graph_of_raw t))
+      | None -> true)
+  then
+    let t = raw_of_graph g in
+    assert (Graph.iso Info.same_label g (graph_of_raw t));
+    Format.kasprintf entry#set_text "%a" (Raw.pp Sparse) t;
+    set_graph_infos g
+
+let on_graph f = set_graph (f !graph)
+
+let text_changed _ =
+  match current_term (fun _ -> label#set_label "Parsing error\n") with
+  | Some r ->
+     let g = graph_of_raw r in
+     set_graph_infos g;
+     Place.sources_on_circle g;
+     Place.graphviz g;
+     graph := g;
+     active := `N;
+     canvas#clear;
+     Graph.draw_on canvas ~iprops:true g;
+     arena#ensure (Graph.bbox g)
+  | None -> ()
 
 let catch() = Graph.find (Geometry.inside arena#pointer) !graph
 
 let ivertex() =
   let v = Info.positionned_ivertex arena#pointer in
-  graph := Graph.add_ivertex v !graph;
-  redraw();
-  relabel "";
+  on_graph (Graph.add_ivertex v);
   v
 
 let button_press ev =
@@ -135,25 +133,24 @@ let scale s =
   | `N -> ()
 
 let lift() =
-  graph := Graph.lft (Info.positionned_source (Graph.arity !graph+1) arena#pointer) !graph;
-  redraw(); relabel ""
+  on_graph (Graph.lft (Info.positionned_source (Graph.arity !graph+1) arena#pointer))
 
 let remove() =
   match catch() with
-  | `V v -> graph := Graph.rem_vertex v !graph; redraw(); relabel ""
-  | `E e -> graph := Graph.rem_edge e !graph; redraw(); relabel ""
+  | `V v -> on_graph (Graph.rem_vertex v)
+  | `E e -> on_graph (Graph.rem_edge e)
   | `N -> ()
 
 let promote() =
   match catch() with
-  | `V (Inn v) -> graph := Graph.promote v !graph; redraw(); relabel ""
+  | `V (Inn v) -> on_graph (Graph.promote v)
   | `V (Src _) -> print_endline "cannot promote a source"
   | `E _ -> print_endline "cannot promote an edge"
   | `N -> ()
 
 let forget() =
   match catch() with
-  | `V (Src i) -> graph := Graph.forget i !graph; redraw(); relabel ""
+  | `V (Src i) -> on_graph (Graph.forget i)
   | `V (Inn _) -> print_endline "cannot forget an inner vertex (use r to remove it)"
   | `E _ -> print_endline "cannot forget an edge (use r to remove it)"
   | _ -> ()
@@ -161,9 +158,8 @@ let forget() =
 let edge l s =
   let e = Info.positionned_edge (Seq.size l) s in
   let e,g = Graph.add_edge e l !graph in
-  graph := g;
   Place.center_edge g e;
-  redraw(); relabel ""
+  set_graph g
 
 let center() =
   match catch() with
@@ -202,9 +198,9 @@ let _ = da#event#connect#button_press ~callback:button_press
 let _ = da#event#connect#button_release ~callback:button_release
 let _ = arena#enable_moves
 let _ = da#event#connect #key_press ~callback:key_press
-let _ = entry#connect#changed ~callback:set_graph
+let _ = entry#connect#changed ~callback:text_changed
 let _ = window#connect#destroy ~callback:Main.quit
 let _ =
-  set_graph ();
+  text_changed ();
   window#show ();
   Main.main ()
