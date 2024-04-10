@@ -371,7 +371,7 @@ let draw_on (draw: canvas) ?(iprops=false) (g: #positionned graph) =
       match iprops with
       | Some k when is_forget_point g k x ->
          draw#pentagon,
-         if is_anchor g x then Constants.anchor_color else x#color
+         if is_anchor g x then Gg.Color.black else x#color
       | _ -> draw#circle,x#color
     in
     shape ~fill c;

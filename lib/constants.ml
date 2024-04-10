@@ -24,6 +24,7 @@ let xcolor = function
   | "lblue"  -> Color.v 0.4 0.8 0.8 1.
   | "orange" -> Color.v 1.0 0.4 0.0 1.
   | "violet" -> Color.v 0.4 0.0 0.4 1.
+  | "black"  -> Color.black
   | "gray"   -> gray
   | _        -> gray
 
@@ -39,5 +40,3 @@ let color' ?color label =
                | "e" -> "green"
                | _   -> "gray")
 let color = xcolor
-
-let anchor_color = color "violet"
