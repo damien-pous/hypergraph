@@ -255,7 +255,8 @@ module U1 = struct
   include U0
   include Functor.E(U0)
   module I(M: EALGEBRA) = struct
-    let eval g =
+    (* extracting a term out of a graph, with all forgets at toplevel *)
+    let eval_flat g =
       let k = arity g in
       let v = isize g in
       let k' = k + v in
@@ -272,6 +273,36 @@ module U1 = struct
           (M.nil k') g.edges
       in
       Set.fold M.fgt u g.ivertices
+    (* extracting a term out of a graph, of optimal width *)    
+    let eval_opt g =
+      let k = treewidth g in
+      let rec eval g =
+        let cs = reduced_components g in
+        M.bigpar (arity g) (
+            Set.lmap (
+                fun (i,c) ->
+                let t = 
+                  match find_forget_point c k with
+                  | Some x -> M.fgt x (eval (promote x c))
+                  | None ->
+                     assert (is_atomic c);
+                     match Set.case c.edges with
+                     | Some (e,_) ->
+                        let p =
+                          Perm.of_fun (arity c)
+                            (fun i -> match Seq.get e.neighbours i with
+                                      | Src j -> j
+                                      | _ -> assert false)
+                        in
+                        M.prm p (M.edg (Seq.size e.neighbours) e.einfo)
+                     | None -> assert false
+                in
+                M.inj (arity g) (ISeq.to_inj i) t
+              ) cs)
+      in eval g
+    
+    let eval g =
+      if true then eval_opt g else eval_flat g
   end
 end
 include Functor.S(U1)
