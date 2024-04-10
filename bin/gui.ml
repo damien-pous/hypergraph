@@ -11,16 +11,45 @@ let canvas = new Picture.basic_canvas
 let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
+let file = ref None
 let text = "a|lb|(23)lc|(13)l(fd)"
 
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~title:"HG" ()
 let vbox = GPack.vbox ~homogeneous:false ~packing:window#add ()
+
+let menubar = GMenu.menu_bar ~packing:vbox#pack ()
+let factory = new GMenu.factory menubar
+let accel_group = factory#accel_group
+let file_menu = factory#add_submenu "File"
+let file_factory = new GMenu.factory file_menu ~accel_group
+
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
 let entry = GEdit.entry ~text ~editable:true ~packing:(vbox#pack ~expand:false) ()
 let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:40 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
 
+let dialog title action stock stock' filter =
+  let dlg = GWindow.file_chooser_dialog
+    ~action ~title
+    ~parent:window
+    ~position:`CENTER_ON_PARENT
+    ~destroy_with_parent:true ()
+  in
+  dlg#add_button_stock `CANCEL `CANCEL;
+  dlg#add_select_button_stock stock stock';
+  dlg#add_filter filter;
+  ignore(dlg#set_current_folder ".");
+  fun k () ->
+  if dlg#run() = stock' then (
+    match dlg#filename with
+    | Some f ->
+       let f = Filename.chop_extension f in
+       window#set_title (Filename.basename f);
+       file := Some f;
+       k f
+    | None -> ()
+  ); dlg#misc#hide()
 
 let current_term k =
   try
@@ -29,23 +58,12 @@ let current_term k =
     Some (Raw.map Info.kvl_to_positionned t)
   with e -> k e; None
 
-let export_pdf () =
-  let view = Graph.bbox !graph in
-  Picture.pdf canvas#get view "test.pdf";
-  print_endline "exported to test.pdf"
-
-let export_svg () =
-  let view = Graph.bbox !graph in
-  Picture.svg canvas#get view "test.svg";
-  print_endline "exported to test.svg"
-
-(* recomputing the picture and rendering it *)
 let redraw() =
   canvas#clear;
   Graph.draw_on canvas ~iprops:true !graph;
   arena#refresh
 
-let set_graph_infos g =
+let display_graph_infos g =
   let pp_graph_infos f =
     Format.fprintf f "Treewidth: %i\n" (Graph.treewidth g);
     match Set.size (Graph.components g) with
@@ -62,7 +80,6 @@ let set_graph_infos g =
   in
   Format.kasprintf label#set_label "%t" pp_graph_infos
 
-
 let set_graph g =
   graph := g;
   redraw();
@@ -73,7 +90,7 @@ let set_graph g =
     let t = raw_of_graph g in
     assert (Graph.iso Info.same_label g (graph_of_raw t));
     Format.kasprintf entry#set_text "%a" (Raw.pp Sparse) t;
-    set_graph_infos g
+    display_graph_infos g
 
 let on_graph f = set_graph (f !graph)
 
@@ -81,7 +98,7 @@ let text_changed _ =
   match current_term (fun _ -> label#set_label "Parsing error\n") with
   | Some r ->
      let g = graph_of_raw r in
-     set_graph_infos g;
+     display_graph_infos g;
      Place.sources_on_circle g;
      Place.graphviz g;
      graph := g;
@@ -90,6 +107,42 @@ let text_changed _ =
      Graph.draw_on canvas ~iprops:true g;
      arena#ensure (Graph.bbox g)
   | None -> ()
+
+let load =
+  dialog "Open graph file" `OPEN `OPEN `OPEN 
+    (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ())
+    (fun file ->
+      let l = File.read file in
+      Format.kasprintf entry#set_text "%a" (Raw.pp Sparse) (File.first l);
+      set_graph (graph_of_raw (File.last l)))
+
+let save_to f =
+  match current_term (fun _ -> failwith "cannot save while there are parsing errors") with
+  | Some t -> 
+     let l =
+       if File.exists f then (
+         let old = File.read f in
+         if not (File.compatible old t) then failwith ("current graph is incompatible with the one in "^f);
+         old
+       ) else File.single t
+     in
+     let t' = raw_of_graph !graph in
+     let l = File.append l t' in
+     File.write f l;
+     File.export_term f t'
+  | None -> ()
+
+let save =
+  let dlg =
+    dialog "Save graph to"
+      `SAVE `SAVE `SAVE 
+      (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ())
+  in
+  fun () ->
+  match !file with
+  | Some file -> save_to file
+  | None -> dlg save_to ()
+
 
 let catch() = Graph.find (Geometry.inside arena#pointer) !graph
 
@@ -170,8 +223,6 @@ let key_press e =
   (match !mode with
    | `Normal ->
       (match GdkEvent.Key.string e with
-       | "q" -> Main.quit()
-       | "o" -> export_pdf(); export_svg()
        | "c" -> center()
        | "-" -> scale (1. /. 1.1)
        | "+" -> scale 1.1
@@ -184,11 +235,13 @@ let key_press e =
        | _ -> ())
    | `InsertEdge l ->
       (match GdkEvent.Key.string e with
-       | "q" -> Main.quit()
        | ("a" | "b" | "c" | "d" | "e") as s -> mode := `Normal; edge l s
        | _ -> mode := `Normal; edge l "")
   ); true
 
+let _ = file_factory#add_item "Open" ~key:GdkKeysyms._O ~callback:load
+let _ = file_factory#add_item "Save" ~key:GdkKeysyms._S ~callback:save
+let _ = file_factory#add_item "Quit" ~key:GdkKeysyms._Q ~callback:Main.quit
 
 let _ = GtkBase.Widget.add_events da#as_widget
           [ `KEY_PRESS; `BUTTON_MOTION; `BUTTON_PRESS; `BUTTON_RELEASE ]
@@ -200,7 +253,7 @@ let _ = arena#enable_moves
 let _ = da#event#connect #key_press ~callback:key_press
 let _ = entry#connect#changed ~callback:text_changed
 let _ = window#connect#destroy ~callback:Main.quit
-let _ =
-  text_changed ();
-  window#show ();
-  Main.main ()
+let _ = window#add_accel_group accel_group
+let _ = text_changed ()
+let _ = window#show ()
+let _ = Main.main ()

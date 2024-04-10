@@ -97,6 +97,8 @@ Conversions: conversion functions between graphs and various kinds of terms
 
 Place:       placing graphs
 
+File:        HG files and functions to manipulate them
+
 GArena:      GTK arenas
 
 ## bin
