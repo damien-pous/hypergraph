@@ -11,10 +11,10 @@
 %nonassoc LFT FGT PRM INJ
 %right QUOTE
 
-%type <Info.kvl Raw.t> sterm
+%type <Info.kvl Term.t> sterm
 %start sterm
 
-%type <Info.kvl Raw.t list> file
+%type <Info.kvl Term.t list> file
 %start file
 
 
@@ -28,7 +28,7 @@
 %start dotlines
 
 %{
-    open Raw
+    open Term
 %}
 
 %%

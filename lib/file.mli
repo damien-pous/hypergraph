@@ -1,6 +1,6 @@
 open Types
 
-type term = positionned Raw.t
+type term = positionned Term.t
 
 (* non-empty lists of equivalent terms, the last of which is used for rendering *)
 type t

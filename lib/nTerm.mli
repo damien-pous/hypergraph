@@ -15,5 +15,5 @@ and 'a fpt = private
 
 include ISEALGEBRA'
         with type 'a u = 'a s
-         and type 'a ru = 'a Raw.u
-         and type 'a rt = 'a Raw.t
+         and type 'a ru = 'a Term.u
+         and type 'a rt = 'a Term.t

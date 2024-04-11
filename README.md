@@ -69,7 +69,7 @@ Misc:        miscellaneous utilities
 
 Set:         finite (multi)sets
 Id:          identifiers and maps indexed by identifiers (no longer used)
-Seq:         finite sequences, index starting at 1
+Seq:         finite sequences, index starting at 1, usually duplicate-free
 Perm:        finite support permutations
 Inj:         finite support injections
 ISeq:        increasing sequences
@@ -81,8 +81,8 @@ Info:        informations about vertices & edges
 
 Functor:     functors to generate derived operations & source-decorated operations
 
-Raw:         raw terms, where arity is inferred
-Term:        plain terms, as in the paper
+Term:        raw terms, where arity is inferred
+PTerm:       plain terms, as in the paper
 NTerm:       normalised terms (full prime decomposed)
 
 Lexer:       lexer

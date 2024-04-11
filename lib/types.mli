@@ -140,7 +140,7 @@ module type IEALGEBRA' = sig
   include IEALGEBRA
   val forget: int -> 'a -> 'a t -> 'a t
   type 'a r
-  val raw: 'a t -> 'a r
+  val term: 'a t -> 'a r
 end
 
 (* additional derived sourced operations *)
@@ -159,5 +159,5 @@ module type ISEALGEBRA' = sig
   module SI(M: SEALGEBRA): sig val eval: 'a t -> 'a M.t end
   val pp: pp_mode -> formatter -> #printable t -> unit  
   type 'a rt
-  val raw: 'a t -> 'a rt
+  val term: 'a t -> 'a rt
 end

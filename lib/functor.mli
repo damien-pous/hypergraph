@@ -5,5 +5,5 @@ module E(M: ALGEBRA): EALGEBRA
 
 module S(M: IALGEBRA): ISEALGEBRA'
        with type 'a u = 'a M.t
-        and type 'a ru = 'a Raw.u
-        and type 'a rt = 'a Raw.t
+        and type 'a ru = 'a Term.u
+        and type 'a rt = 'a Term.t

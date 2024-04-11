@@ -28,15 +28,15 @@ module E(M: ALGEBRA) =
 
 module S(M: IALGEBRA) =
   struct
-    type 'a ru = 'a Raw.u
-    type 'a rt = 'a Raw.t
+    type 'a ru = 'a Term.u
+    type 'a rt = 'a Term.t
     module U = struct
       include E(M)
       module I = M.I
-      module IRU = I(Raw.U)
-      type 'a r = 'a Raw.u
-      let raw u = IRU.eval u
-      let pp mode f u = Raw.U.pp mode f (raw u)
+      module IRU = I(Term.U)
+      type 'a r = 'a Term.u
+      let term u = IRU.eval u
+      let pp mode f u = Term.U.pp mode f (term u)
       let forget i x g =
         let k = arity g in
         if i>k then failwith "forget: not a valid source"
@@ -68,27 +68,27 @@ module S(M: IALGEBRA) =
       module UI = M.I(N.U)
       let eval (s,u) = N.source s (UI.eval u)
     end
-    module SIR = SI(Raw)
-    let raw u = SIR.eval u
-    let pp mode f u = Raw.pp mode f (raw u)
+    module SIR = SI(Term)
+    let term u = SIR.eval u
+    let pp mode f u = Term.pp mode f (term u)
   end
 
 (* module X(M: ALGEBRA with type ('a,'b) m = ('a,'b) umapper) *)
 (*          (I: functor(X: EALGEBRA) -> sig val eval: 'a M.t -> 'a X.t end) = *)
 (*   struct *)
-(*     module IRU = I(Raw.U) *)
+(*     module IRU = I(Term.U) *)
 (*     let uraw = IRU.eval  *)
 (*     module M' = struct *)
 (*       include M *)
-(*       let pp mode f u = Raw.U.pp mode f (uraw u) *)
+(*       let pp mode f u = Term.U.pp mode f (uraw u) *)
 (*     end *)
 (*     module U' = struct *)
 (*       include E(M') *)
 (*       module INIT = I *)
 (*     end *)
 (*     include S(U') *)
-(*     module SIR = SINIT(Raw) *)
+(*     module SIR = SINIT(Term) *)
 (*     let raw = SIR.eval *)
-(*     let pp mode f u = Raw.pp mode f (raw u) *)
+(*     let pp mode f u = Term.pp mode f (raw u) *)
 (*   end *)
 

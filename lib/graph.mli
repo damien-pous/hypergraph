@@ -4,7 +4,7 @@ open Types
 
 type 'a vertex = Src of int | Inn of 'a
 type 'a edge
-include ISEALGEBRA' with type 'a ru = 'a Raw.u and type 'a rt = 'a Raw.t
+include ISEALGEBRA' with type 'a ru = 'a Term.u and type 'a rt = 'a Term.t
 type 'a ugraph = 'a u           (* source-decoration-free graphs *)
 type 'a graph = 'a t
 
@@ -73,7 +73,7 @@ val get_info: 'a graph -> kind*int -> 'a
 
 module U: sig
   (* variants of the above functions on source-decoration-free graphs *)
-  include IEALGEBRA' with type 'a t = 'a ugraph and type 'a r = 'a Raw.u
+  include IEALGEBRA' with type 'a t = 'a ugraph and type 'a r = 'a Term.u
 
   val is_full: 'a ugraph -> bool
   val is_prime: 'a ugraph -> bool

@@ -1,6 +1,6 @@
 open Conversions
 
-type term = Types.positionned Raw.t
+type term = Types.positionned Term.t
 
 type t = term list
 
@@ -10,14 +10,14 @@ let first = List.hd
 
 let last l = List.hd (List.rev l)
 
-let compatible l x = Graph.iso Info.same_label (graph_of_raw (first l)) (graph_of_raw x)
+let compatible l x = Graph.iso Info.same_label (graph_of_term (first l)) (graph_of_term x)
 
 let append l x = l@[x]
 
 let check l =
-  let g = graph_of_raw (first l) in
+  let g = graph_of_term (first l) in
   List.iteri (fun i x ->
-      if not (Graph.iso Info.same_label_kvl g (graph_of_raw x)) then
+      if not (Graph.iso Info.same_label_kvl g (graph_of_term x)) then
         Format.kasprintf failwith "error: graph number %i is not isomorphic to the previous ones" (i+1)
     ) (List.tl l) 
 
@@ -27,21 +27,21 @@ let read f =
   let l = Parser.file Lexer.token l in
   close_in i;
   check l;
-  List.map (Raw.map Info.kvl_to_positionned) l
+  List.map (Term.map Info.kvl_to_positionned) l
 
 let write f l =
   let o = open_out (f^".hg") in
   let f = Format.formatter_of_out_channel o in
   let rec pp = function
     | [] -> ()
-    | [t] -> Format.fprintf f "%a@." (Raw.pp Full) t
-    | t::q -> Format.fprintf f "%a\n~ " (Raw.pp Sparse) t; pp q
+    | [t] -> Format.fprintf f "%a@." (Term.pp Full) t
+    | t::q -> Format.fprintf f "%a\n~ " (Term.pp Sparse) t; pp q
   in
   pp l;
   close_out o
 
 let export_term f t =
-  let g = graph_of_raw t in
+  let g = graph_of_term t in
   let view = Graph.bbox g in
   let image = Graph.draw g in
   Picture.pdf image view( f^".pdf");

@@ -55,7 +55,7 @@ let current_term k =
   try
     let l = Lexing.from_string entry#text in
     let t = Parser.sterm Lexer.token l in
-    Some (Raw.map Info.kvl_to_positionned t)
+    Some (Term.map Info.kvl_to_positionned t)
   with e -> k e; None
 
 let redraw() =
@@ -84,12 +84,12 @@ let set_graph g =
   graph := g;
   redraw();
   if (match current_term (fun _ -> ()) with
-      | Some t -> not (Graph.iso Info.same_label g (graph_of_raw t))
+      | Some t -> not (Graph.iso Info.same_label g (graph_of_term t))
       | None -> true)
   then
-    let t = raw_of_graph g in
-    assert (Graph.iso Info.same_label g (graph_of_raw t));
-    Format.kasprintf entry#set_text "%a" (Raw.pp Sparse) t;
+    let t = term_of_graph g in
+    assert (Graph.iso Info.same_label g (graph_of_term t));
+    Format.kasprintf entry#set_text "%a" (Term.pp Sparse) t;
     display_graph_infos g
 
 let on_graph f = set_graph (f !graph)
@@ -97,7 +97,7 @@ let on_graph f = set_graph (f !graph)
 let text_changed _ =
   match current_term (fun _ -> label#set_label "Parsing error\n") with
   | Some r ->
-     let g = graph_of_raw r in
+     let g = graph_of_term r in
      display_graph_infos g;
      Place.sources_on_circle g;
      Place.graphviz g;
@@ -113,8 +113,8 @@ let load =
     (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ())
     (fun file ->
       let l = File.read file in
-      Format.kasprintf entry#set_text "%a" (Raw.pp Sparse) (File.first l);
-      set_graph (graph_of_raw (File.last l)))
+      Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (File.first l);
+      set_graph (graph_of_term (File.last l)))
 
 let save_to f =
   match current_term (fun _ -> failwith "cannot save while there are parsing errors") with
@@ -126,7 +126,7 @@ let save_to f =
          old
        ) else File.single t
      in
-     let t' = raw_of_graph !graph in
+     let t' = term_of_graph !graph in
      let l = File.append l t' in
      File.write f l;
      File.export_term f t'
