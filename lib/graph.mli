@@ -36,8 +36,6 @@ val is_anchor: 'a graph -> 'a -> bool
 val find_anchor: 'a graph -> 'a option
 val anchors: 'a graph -> 'a mset
 
-val treewidth: 'a graph -> int
-
 val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a graph -> unit
 val iter_edges': ('a edge -> unit) -> 'a graph -> unit
 val iter_edges'': ('a edge -> 'a -> 'a vertex seq -> unit) -> 'a graph -> unit
@@ -86,8 +84,6 @@ module U: sig
   (* decompose a graph g into an injection i and a full graph g' such that g = {i}g' *)
   val reduce: 'a ugraph -> iseq * 'a ugraph 
   val reduced_components: 'a ugraph -> (iseq * 'a ugraph) mset
-
-  val treewidth: 'a ugraph -> int
 
   val is_forget_point: 'a ugraph -> int -> 'a -> bool
   val forget_points: 'a ugraph -> int -> 'a mset

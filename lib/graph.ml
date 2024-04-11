@@ -26,7 +26,6 @@ type 'a t = {
 let arity g = g.arity
 let isize g = MSet.size g.ivertices
 let esize g = MSet.size g.edges
-let width _ = failwith "todo"
 
 let is_empty g =
   MSet.is_empty g.ivertices && MSet.is_empty g.edges
@@ -183,7 +182,8 @@ let promote x g =
                | v -> v)
               g.edges }
 
-let treewidth g =
+(* treewidth *)
+let width g =
   let n = arity g + MSet.size g.ivertices in 
   let rec treewidth g =
     if is_empty g || is_atomic g then arity g - 1
@@ -194,7 +194,7 @@ let treewidth g =
             | _ -> MSet.fold max (-1) (MSet.map (fun (_,c) -> treewidth c) cs))
   in treewidth g
 
-let is_forget_point g k x = treewidth (promote x g) <= k
+let is_forget_point g k x = width (promote x g) <= k
 let find_forget_point g k = MSet.find (is_forget_point g k) g.ivertices
 let forget_points g k = MSet.filter (is_forget_point g k) g.ivertices
 
@@ -275,7 +275,7 @@ module U1 = struct
       MSet.fold M.fgt u g.ivertices
     (* extracting a term out of a graph, of optimal width *)    
     let eval_opt g =
-      let k = treewidth g in
+      let k = width g in
       let rec eval g =
         let cs = reduced_components g in
         M.bigpar (arity g) (
@@ -328,7 +328,6 @@ let is_atomic x = sext U.is_atomic x
 let is_hard x = sext U.is_hard x
 
 let components (s,g) = MSet.map (fun g -> (s,g)) (U.components g)
-let treewidth x = sext U.treewidth x
 
 let is_forget_point x = sext U.is_forget_point x
 let forget_points x = sext U.forget_points x
@@ -387,7 +386,7 @@ let bbox (g: #positionned graph) =
   !b
 
 let draw_on (draw: canvas) ?(iprops=false) (g: #positionned graph) =
-  let iprops = if iprops && is_fullprime g then Some (treewidth g) else None in
+  let iprops = if iprops && is_fullprime g then Some (width g) else None in
   let npos = Seq.lmap (fun v -> (vinfo g v)#pos) in
   let draw_source i x =
     let p = x#pos in

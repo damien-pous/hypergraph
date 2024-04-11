@@ -64,7 +64,7 @@ let redraw() =
 
 let display_graph_infos g =
   let pp_graph_infos f =
-    Format.fprintf f "Treewidth: %i\n" (Graph.treewidth g);
+    Format.fprintf f "Treewidth: %i\n" (Graph.width g);
     match MSet.size (Graph.components g) with
     | 0 -> Format.fprintf f "Empty"
     | 1 -> (
