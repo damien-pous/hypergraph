@@ -67,12 +67,13 @@ let display_graph_infos g =
     Format.fprintf f "Treewidth: %i\n" (Graph.width g);
     match MSet.size (Graph.components g) with
     | 0 -> Format.fprintf f "Empty"
-    | 1 -> (
-      if Graph.is_full g then
-        if Graph.is_hard g then Format.fprintf f "Hard"
-        else Format.fprintf f "Full prime"
-      else Format.fprintf f "Prime"
-    )
+    | 1 -> 
+       Format.fprintf f
+         (if Graph.is_full g then
+            if Graph.is_atomic g then "Atomic"
+            else if Graph.is_hard g then  "Hard"
+            else "Full prime"
+          else "Prime")
     | n ->
        if Graph.is_full g then Format.fprintf f "Full, ";
        Format.fprintf f "%i components" n

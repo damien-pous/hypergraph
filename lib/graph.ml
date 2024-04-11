@@ -205,7 +205,7 @@ let is_anchor g x =
 let find_anchor g = MSet.find (is_anchor g) g.ivertices
 let anchors g = MSet.filter (is_anchor g) g.ivertices
 
-let is_hard g = is_fullprime g && find_anchor g = None
+let is_hard g = not (is_atomic g) && is_fullprime g && find_anchor g = None
   
 (* checking isomorphism
    naively for now: just try to match edges in all possible ways *)
