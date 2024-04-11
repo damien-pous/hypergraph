@@ -1,7 +1,8 @@
 - describe each file + document interfaces
 
 # placement
-- placement with dot/neato
+- fine tune options for graphviz placement
+- scaling
 - properly place unary edges upon creation
 
 # rendering
