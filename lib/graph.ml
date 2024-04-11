@@ -12,30 +12,30 @@ type 'a edge = { einfo: 'a; neighbours: 'a vertex seq }
 let einfo e = e.einfo
 let neighbours e = e.neighbours
 
-let nomap f = Set.map (fun e -> { e with neighbours = Seq.omap f e.neighbours })
-let nmap f = Set.map (fun e -> { e with neighbours = Seq.map f e.neighbours })
+let nomap f = MSet.map (fun e -> { e with neighbours = Seq.omap f e.neighbours })
+let nmap f = MSet.map (fun e -> { e with neighbours = Seq.map f e.neighbours })
 let nfilter f = nomap (fun v -> if f v then Some v else None)
 
 module U0 = struct
 type 'a t = {
     arity: int;
-    ivertices: 'a set;
-    edges: 'a edge set;
+    ivertices: 'a mset;
+    edges: 'a edge mset;
   }
 
 let arity g = g.arity
-let isize g = Set.size g.ivertices
-let esize g = Set.size g.edges
+let isize g = MSet.size g.ivertices
+let esize g = MSet.size g.edges
 let width _ = failwith "todo"
 
 let is_empty g =
-  Set.is_empty g.ivertices && Set.is_empty g.edges
+  MSet.is_empty g.ivertices && MSet.is_empty g.edges
 let is_atomic g =
-  Set.is_empty g.ivertices && Set.size g.edges = 1 &&
-    Set.forall (fun e -> Seq.size e.neighbours = g.arity) g.edges
+  MSet.is_empty g.ivertices && MSet.size g.edges = 1 &&
+    MSet.forall (fun e -> Seq.size e.neighbours = g.arity) g.edges
 let touched_sources g =
   ISeq.filter
-    (fun i -> Set.exists (fun e -> Seq.mem (Src i) e.neighbours) g.edges)
+    (fun i -> MSet.exists (fun e -> Seq.mem (Src i) e.neighbours) g.edges)
     (ISeq.id g.arity)
 let is_full g = ISeq.size (touched_sources g) = arity g
 
@@ -43,36 +43,36 @@ let components g =
   let add_neighbours x todo =
     match x with
       | `E e -> Seq.fold
-                  (function Inn v -> Set.add (`V v) | _ -> fun acc -> acc)
+                  (function Inn v -> MSet.add (`V v) | _ -> fun acc -> acc)
                   e.neighbours todo
-      | `V v -> Set.fold
-                  (fun e -> if Seq.mem (Inn v) e.neighbours then Set.add (`E e) else fun acc -> acc)
+      | `V v -> MSet.fold
+                  (fun e -> if Seq.mem (Inn v) e.neighbours then MSet.add (`E e) else fun acc -> acc)
                   todo g.edges
   in
-  let rec c acc todo = match Set.case todo with
+  let rec c acc todo = match MSet.case todo with
     | None -> acc
     | Some(x,todo) ->
-       if Set.mem x acc then c acc todo
-       else c (Set.add x acc) (add_neighbours x todo)
+       if MSet.mem x acc then c acc todo
+       else c (MSet.add x acc) (add_neighbours x todo)
   in
   let lonely_edges =
-    Set.fold (fun e ->
+    MSet.fold (fun e ->
         if Seq.forall (function Src _ -> true | _ -> false) e.neighbours then
-          Set.add { g with ivertices=Set.empty; edges=Set.single e }
+          MSet.add { g with ivertices=MSet.empty; edges=MSet.single e }
         else fun acc -> acc
-      ) Set.empty g.edges
+      ) MSet.empty g.edges
   in
-  fst (Set.fold
+  fst (MSet.fold
          (fun v (acc,seen) ->
-           if Set.mem v seen then (acc,seen)
-           else let c = c Set.empty (Set.single (`V v)) in
-                let ivertices = Set.omap (function `V v -> Some v | _ -> None) c in
-                let edges = Set.omap (function `E e -> Some e | _ -> None) c in                
-                let acc = Set.add { g with ivertices; edges } acc in
-                acc, Set.union ivertices seen)
-         (lonely_edges,Set.empty) g.ivertices)
+           if MSet.mem v seen then (acc,seen)
+           else let c = c MSet.empty (MSet.single (`V v)) in
+                let ivertices = MSet.omap (function `V v -> Some v | _ -> None) c in
+                let edges = MSet.omap (function `E e -> Some e | _ -> None) c in                
+                let acc = MSet.add { g with ivertices; edges } acc in
+                acc, MSet.union ivertices seen)
+         (lonely_edges,MSet.empty) g.ivertices)
   
-let is_prime g = Set.size (components g) = 1
+let is_prime g = MSet.size (components g) = 1
 let is_fullprime g = is_full g && is_prime g
 
 let src_map f = function
@@ -87,22 +87,22 @@ let reduce g =
             edges = nmap (src_map (ISeq.index i)) g.edges } in
   (i,g)
   
-let reduced_components g = Set.map reduce (components g)
+let reduced_components g = MSet.map reduce (components g)
 
 let edges g = g.edges
-let iter_ivertices f g = Set.iter f g.ivertices
-let iter_edges'' f g = Set.iter (fun e -> f e e.einfo e.neighbours) g.edges
-let iter_edges' f g = Set.iter (fun e -> f e) g.edges
-let iter_edges f g = Set.iter (fun e -> f e.einfo e.neighbours) g.edges
+let iter_ivertices f g = MSet.iter f g.ivertices
+let iter_edges'' f g = MSet.iter (fun e -> f e e.einfo e.neighbours) g.edges
+let iter_edges' f g = MSet.iter (fun e -> f e) g.edges
+let iter_edges f g = MSet.iter (fun e -> f e.einfo e.neighbours) g.edges
 
 let nil arity =
-  { arity; ivertices = Set.empty; edges = Set.empty }
+  { arity; ivertices = MSet.empty; edges = MSet.empty }
 
 let par g h =
   assert (arity g = arity h);
   { g with
-    ivertices = Set.union g.ivertices h.ivertices;
-    edges = Set.union g.edges h.edges }
+    ivertices = MSet.union g.ivertices h.ivertices;
+    edges = MSet.union g.edges h.edges }
 
 let lft g = { g with arity = g.arity + 1 }
 
@@ -111,7 +111,7 @@ let fgt z g =
   assert (k > 0);
   let z' = Inn z in
   { arity = k-1;
-    ivertices = Set.add z g.ivertices;
+    ivertices = MSet.add z g.ivertices;
     edges = nmap 
               (function
                | Src i when i=k -> z'
@@ -124,30 +124,30 @@ let prm p g =
 
 let edg arity einfo =
   { arity;
-    ivertices = Set.empty;
-    edges = Set.single { einfo; neighbours=Seq.init arity src } }
+    ivertices = MSet.empty;
+    edges = MSet.single { einfo; neighbours=Seq.init arity src } }
 
 let map f g =
   (* TODO: need to memoize [f] to guarantee physical identities *)
   let _ = failwith "Warning: fix Graph.map before using it" in
   { arity = g.arity;
-    ivertices = Set.map f.fi g.ivertices;
-    edges = Set.map (fun x -> { einfo = f.fe (Seq.size x.neighbours) x.einfo;
+    ivertices = MSet.map f.fi g.ivertices;
+    edges = MSet.map (fun x -> { einfo = f.fe (Seq.size x.neighbours) x.einfo;
                                 neighbours = Seq.map (vmap f.fi) x.neighbours }) g.edges }
 
 let add_edge einfo neighbours g =
   let e = {einfo;neighbours} in
-  e,{ g with edges = Set.add e g.edges }
+  e,{ g with edges = MSet.add e g.edges }
 
 let rem_edge e g =
-  { g with edges = Set.remq e g.edges }
+  { g with edges = MSet.remq e g.edges }
 
 let add_ivertex v g =
-  { g with ivertices = Set.add v g.ivertices }
+  { g with ivertices = MSet.add v g.ivertices }
 
 let rem_ivertex v g =
   { g with
-    ivertices = Set.remq v g.ivertices;
+    ivertices = MSet.remq v g.ivertices;
     edges = nfilter
               (function
                | Inn w when v == w -> false
@@ -176,7 +176,7 @@ let rem_vertex = function
 
 let promote x g =
   let arity = g.arity+1 in
-  { arity; ivertices = Set.remq x g.ivertices;
+  { arity; ivertices = MSet.remq x g.ivertices;
     edges = nmap
               (function
                | Inn y when x == y -> src arity
@@ -184,26 +184,26 @@ let promote x g =
               g.edges }
 
 let treewidth g =
-  let n = arity g + Set.size g.ivertices in 
+  let n = arity g + MSet.size g.ivertices in 
   let rec treewidth g =
     if is_empty g || is_atomic g then arity g - 1
     else let cs = reduced_components g in
          max (arity g - 1)
-           (match Set.size cs with
-            | 1 -> Set.fold (fun v -> min (treewidth (promote v g))) n g.ivertices
-            | _ -> Set.fold max (-1) (Set.map (fun (_,c) -> treewidth c) cs))
+           (match MSet.size cs with
+            | 1 -> MSet.fold (fun v -> min (treewidth (promote v g))) n g.ivertices
+            | _ -> MSet.fold max (-1) (MSet.map (fun (_,c) -> treewidth c) cs))
   in treewidth g
 
 let is_forget_point g k x = treewidth (promote x g) <= k
-let find_forget_point g k = Set.find (is_forget_point g k) g.ivertices
-let forget_points g k = Set.filter (is_forget_point g k) g.ivertices
+let find_forget_point g k = MSet.find (is_forget_point g k) g.ivertices
+let forget_points g k = MSet.filter (is_forget_point g k) g.ivertices
 
 let is_anchor g x =
   let n = Seq.snoc (Seq.init (arity g) src) (Inn x) in
-  Set.exists (fun e -> Seq.forall (fun x -> Seq.mem x e.neighbours) n) g.edges ||
-    Set.size (Set.filter is_full (components (promote x g))) <> 1
-let find_anchor g = Set.find (is_anchor g) g.ivertices
-let anchors g = Set.filter (is_anchor g) g.ivertices
+  MSet.exists (fun e -> Seq.forall (fun x -> Seq.mem x e.neighbours) n) g.edges ||
+    MSet.size (MSet.filter is_full (components (promote x g))) <> 1
+let find_anchor g = MSet.find (is_anchor g) g.ivertices
+let anchors g = MSet.filter (is_anchor g) g.ivertices
 
 let is_hard g = is_fullprime g && find_anchor g = None
   
@@ -211,18 +211,18 @@ let is_hard g = is_fullprime g && find_anchor g = None
    naively for now: just try to match edges in all possible ways *)
 let iso cmp g h =
   let rec extend1 acc r x y =
-    match Set.case r with
-    | None -> Some (Set.add (x,y) acc)
+    match MSet.case r with
+    | None -> Some (MSet.add (x,y) acc)
     | Some (x',y' as p, q) ->
        match x==x', y==y' with
-       | true,true -> Some (Set.union acc r)
-       | false,false -> extend1 (Set.add p acc) q x y
+       | true,true -> Some (MSet.union acc r)
+       | false,false -> extend1 (MSet.add p acc) q x y
        | _,_ -> None
   in
   let extend1 r x y =
     match x,y with
     | Src i, Src j when i=j -> Some r
-    | Inn x, Inn y -> extend1 Set.empty r x y
+    | Inn x, Inn y -> extend1 MSet.empty r x y
     | _ -> None
   in    
   let extend r x y =
@@ -234,12 +234,12 @@ let iso cmp g h =
   in
   let rec iso h k r =
     (* Format.printf "iso: %a %a %a@." *)
-    (*   (Set.pp (fun f (x,_) -> Info.ppe f x)) h *)
-    (*   (Set.pp (fun f (y,_) -> Info.ppe f y)) k *)
-    (*   (Set.pp (fun f (x,y) -> Format.fprintf f "%a--%a" I.pp x I.pp y)) r; *)
-    match Set.case h with
-    | None -> assert (Set.is_empty k); true
-    | Some(x,h) -> Set.exists_split (fun y k ->
+    (*   (MSet.pp (fun f (x,_) -> Info.ppe f x)) h *)
+    (*   (MSet.pp (fun f (y,_) -> Info.ppe f y)) k *)
+    (*   (MSet.pp (fun f (x,y) -> Format.fprintf f "%a--%a" I.pp x I.pp y)) r; *)
+    match MSet.case h with
+    | None -> assert (MSet.is_empty k); true
+    | Some(x,h) -> MSet.exists_split (fun y k ->
                        match extend r x y with
                        | Some r -> iso h k r
                        | None -> false
@@ -248,7 +248,7 @@ let iso cmp g h =
   arity g = arity h &&
     isize g = isize h &&
       esize g = esize h &&
-        iso (edges g) (edges h) Set.empty
+        iso (edges g) (edges h) MSet.empty
 
 end
 module U1 = struct
@@ -262,31 +262,31 @@ module U1 = struct
       let k' = k + v in
       let idx = function
         | Src i -> i
-        | Inn x -> k + Set.index x g.ivertices (* or reversed, if Set.fold changes *)
+        | Inn x -> k + MSet.index x g.ivertices (* or reversed, if MSet.fold changes *)
       in
       let u =
-        Set.fold (fun e ->
+        MSet.fold (fun e ->
             let e,n = e.einfo, e.neighbours in
             M.par
               (M.inj k' (Inj.of_list (List.map idx (Seq.to_list n)))
                  (M.edg (Seq.size n) e)))
           (M.nil k') g.edges
       in
-      Set.fold M.fgt u g.ivertices
+      MSet.fold M.fgt u g.ivertices
     (* extracting a term out of a graph, of optimal width *)    
     let eval_opt g =
       let k = treewidth g in
       let rec eval g =
         let cs = reduced_components g in
         M.bigpar (arity g) (
-            Set.lmap (
+            MSet.lmap (
                 fun (i,c) ->
                 let t = 
                   match find_forget_point c k with
                   | Some x -> M.fgt x (eval (promote x c))
                   | None ->
                      assert (is_atomic c);
-                     match Set.case c.edges with
+                     match MSet.case c.edges with
                      | Some (e,_) ->
                         let p =
                           Perm.of_fun (arity c)
@@ -327,7 +327,7 @@ let is_fullprime x = sext U.is_fullprime x
 let is_atomic x = sext U.is_atomic x
 let is_hard x = sext U.is_hard x
 
-let components (s,g) = Set.map (fun g -> (s,g)) (U.components g)
+let components (s,g) = MSet.map (fun g -> (s,g)) (U.components g)
 let treewidth x = sext U.treewidth x
 
 let is_forget_point x = sext U.is_forget_point x
@@ -374,7 +374,7 @@ let reduce (s,g) =
   let s = Seq.init (ISeq.size i) (fun x -> Seq.get s (ISeq.get i x)) in
   i,(s,g)
 
-let reduced_components g = Set.map reduce (components g)
+let reduced_components g = MSet.map reduce (components g)
 
 let iso cmp (_,g) (_,h) = U.iso cmp g h
 
@@ -438,5 +438,5 @@ let find f g =
 
 let get_info (s,g) = function
   | S,i -> Seq.get s i
-  | I,i -> Set.nth g.U0.ivertices i
-  | E,i -> (Set.nth g.U0.edges i).einfo
+  | I,i -> MSet.nth g.U0.ivertices i
+  | E,i -> (MSet.nth g.U0.edges i).einfo

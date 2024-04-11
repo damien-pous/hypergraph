@@ -18,6 +18,6 @@ module Make(_: sig val prefix: string end): sig
   val find: (t -> 'a -> bool) -> 'a map -> (t*'a) option
   val size: 'a map -> int
   
-  val keys: 'a map -> t Set.t
-  val values: 'a map -> 'a Set.t
+  val keys: 'a map -> t MSet.t
+  val values: 'a map -> 'a MSet.t
 end

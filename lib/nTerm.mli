@@ -6,7 +6,7 @@ type 'a s = private
      e.g., (3, {([2;3],x); ([2],y)}) denotes the graph of arity three
      with arity 2 full prime graph x between sources 2 and 3,
      and arity 1 full prime graph y at source 2 *)
-  int * (iseq * 'a fpt) set
+  int * (iseq * 'a fpt) mset
 
 (* full prime terms *)
 and 'a fpt = private

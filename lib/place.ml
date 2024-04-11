@@ -46,12 +46,12 @@ let pp_dot f g =
   in
   let ppv f = function
   | Src i -> Format.fprintf f "s%i" i
-  | Inn x -> Format.fprintf f "i%i" (Set.index x (ivertices g))
+  | Inn x -> Format.fprintf f "i%i" (MSet.index x (ivertices g))
   in
   Format.fprintf f "graph {\n";
   Seq.iter (fun i x -> Format.fprintf f "s%i[%a]\n" i ppp x) (sources g);
-  Set.iteri (fun id x -> Format.fprintf f "i%i[%a]\n" id ppp x) (ivertices g);
-  Set.iteri (fun id x ->
+  MSet.iteri (fun id x -> Format.fprintf f "i%i[%a]\n" id ppp x) (ivertices g);
+  MSet.iteri (fun id x ->
       Format.fprintf f "e%i[%a]\n" id ppp (einfo x);
       Format.fprintf f "e%i--%a\n" id (Seq.pp ppv) (neighbours x)
     ) (edges g);

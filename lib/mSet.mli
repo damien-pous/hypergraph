@@ -1,4 +1,4 @@
-(** finite (multi)sets of values *)
+(** finite multisets of values *)
 
 type 'a t
 
@@ -24,6 +24,7 @@ val partition: ('a -> bool) -> 'a t -> 'a t * 'a t
 val lmap: ('a -> 'b) -> 'a t -> 'b list
 val iter: ('a -> unit) -> 'a t -> unit
 val fold: ('a -> 'b -> 'b) -> 'b -> 'a t -> 'b
+val big: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a
 val exists: ('a -> bool) -> 'a t -> bool
 val forall: ('a -> bool) -> 'a t -> bool
 val find: ('a -> bool) -> 'a t -> 'a option

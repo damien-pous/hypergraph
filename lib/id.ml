@@ -22,6 +22,6 @@ module Make(M: sig val prefix: string end) = struct
     | [] -> None
     | (i,x)::_ when f i x -> Some (i,x)
     | _::q -> find f q
-  let keys m = List.fold_right (fun (k,_) -> Set.add k) m Set.empty
-  let values m = List.fold_right (fun (_,v) -> Set.add v) m Set.empty
+  let keys m = List.fold_right (fun (k,_) -> MSet.add k) m MSet.empty
+  let values m = List.fold_right (fun (_,v) -> MSet.add v) m MSet.empty
 end

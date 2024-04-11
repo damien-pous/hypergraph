@@ -8,9 +8,9 @@ include ISEALGEBRA' with type 'a ru = 'a Term.u and type 'a rt = 'a Term.t
 type 'a ugraph = 'a u           (* source-decoration-free graphs *)
 type 'a graph = 'a t
 
-val ivertices: 'a graph -> 'a set
+val ivertices: 'a graph -> 'a mset
 val sources: 'a graph -> 'a seq
-val edges: 'a graph -> 'a edge set
+val edges: 'a graph -> 'a edge mset
 
 val neighbours: 'a edge -> 'a vertex seq
 val einfo: 'a edge -> 'a
@@ -24,17 +24,17 @@ val is_atomic: 'a graph -> bool
 val is_empty: 'a graph -> bool
 val is_hard: 'a graph -> bool
 
-val components: 'a graph -> 'a graph set
+val components: 'a graph -> 'a graph mset
 val reduce: 'a graph -> iseq * 'a graph 
-val reduced_components: 'a graph -> (iseq * 'a graph) set
+val reduced_components: 'a graph -> (iseq * 'a graph) mset
 
 val is_forget_point: 'a graph -> int -> 'a -> bool
 val find_forget_point: 'a graph -> int -> 'a option
-val forget_points: 'a graph -> int -> 'a set
+val forget_points: 'a graph -> int -> 'a mset
 
 val is_anchor: 'a graph -> 'a -> bool
 val find_anchor: 'a graph -> 'a option
-val anchors: 'a graph -> 'a set
+val anchors: 'a graph -> 'a mset
 
 val treewidth: 'a graph -> int
 
@@ -82,19 +82,19 @@ module U: sig
   val is_empty: 'a ugraph -> bool
   val is_hard: 'a ugraph -> bool
   
-  val components: 'a ugraph -> 'a ugraph set
+  val components: 'a ugraph -> 'a ugraph mset
   (* decompose a graph g into an injection i and a full graph g' such that g = {i}g' *)
   val reduce: 'a ugraph -> iseq * 'a ugraph 
-  val reduced_components: 'a ugraph -> (iseq * 'a ugraph) set
+  val reduced_components: 'a ugraph -> (iseq * 'a ugraph) mset
 
   val treewidth: 'a ugraph -> int
 
   val is_forget_point: 'a ugraph -> int -> 'a -> bool
-  val forget_points: 'a ugraph -> int -> 'a set
+  val forget_points: 'a ugraph -> int -> 'a mset
   
   val is_anchor: 'a ugraph -> 'a -> bool
   val find_anchor: 'a ugraph -> 'a option
-  val anchors: 'a ugraph -> 'a set
+  val anchors: 'a ugraph -> 'a mset
  
   val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a ugraph -> unit
   val iter_edges': ('a edge -> unit) -> 'a ugraph -> unit

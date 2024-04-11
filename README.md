@@ -67,7 +67,7 @@ interpreted keys:
 ## lib
 Misc:        miscellaneous utilities
 
-Set:         finite (multi)sets
+MSet         finite multisets
 Id:          identifiers and maps indexed by identifiers (no longer used)
 Seq:         finite sequences, index starting at 1, usually duplicate-free
 Perm:        finite support permutations

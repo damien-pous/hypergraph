@@ -86,6 +86,11 @@ let rec fold f a = function
   | S i -> f i a
   | U(x,y) -> fold f (fold f a y) x
 
+let rec big b z = function
+  | N -> z
+  | S x -> x
+  | U(x,y) -> b (big b z x) (big b z y)
+
 let iteri f x =
   let rec iteri id = function
     | N -> id
