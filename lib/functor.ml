@@ -28,20 +28,25 @@ module E(M: ALGEBRA) =
 
 module S(M: IALGEBRA) =
   struct
+    module EM = struct
     type 'a ru = 'a Term.u
     type 'a rt = 'a Term.t
     module U = struct
-      include E(M)
+      module EM = E(M)
+      include EM
       module I = M.I
-      module IRU = I(Term.U)
-      type 'a r = 'a Term.u
-      let term u = IRU.eval u
-      let pp mode f u = Term.U.pp mode f (term u)
+      module TO = I(Term.U)
+      module OF = Term.U.I(EM)
       let forget i x g =
         let k = arity g in
         if i>k then failwith "forget: not a valid source"
         else if i=k then fgt x g
         else fgt x (prm (Perm.of_cycle [i;k]) g)
+      type 'a r = 'a Term.u
+      let to_term = TO.eval
+      let of_term = OF.eval
+      let get x = comp to_term of_term x
+      let pp mode f = comp (Term.U.pp mode f) to_term
     end
     type 'a u = 'a U.t
     type 'a t = 'a seq * 'a u
@@ -68,27 +73,12 @@ module S(M: IALGEBRA) =
       module UI = M.I(N.U)
       let eval (s,u) = N.source s (UI.eval u)
     end
-    module SIR = SI(Term)
-    let term u = SIR.eval u
-    let pp mode f u = Term.pp mode f (term u)
+    end
+    include EM
+    module TO = SI(Term)
+    module OF = Term.SI(EM)
+    let to_term = TO.eval
+    let of_term = OF.eval
+    let get x = comp to_term of_term x
+    let pp mode f = comp (Term.pp mode f) to_term
   end
-
-(* module X(M: ALGEBRA with type ('a,'b) m = ('a,'b) umapper) *)
-(*          (I: functor(X: EALGEBRA) -> sig val eval: 'a M.t -> 'a X.t end) = *)
-(*   struct *)
-(*     module IRU = I(Term.U) *)
-(*     let uraw = IRU.eval  *)
-(*     module M' = struct *)
-(*       include M *)
-(*       let pp mode f u = Term.U.pp mode f (uraw u) *)
-(*     end *)
-(*     module U' = struct *)
-(*       include E(M') *)
-(*       module INIT = I *)
-(*     end *)
-(*     include S(U') *)
-(*     module SIR = SINIT(Term) *)
-(*     let raw = SIR.eval *)
-(*     let pp mode f u = Term.pp mode f (raw u) *)
-(*   end *)
-

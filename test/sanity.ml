@@ -1,6 +1,4 @@
 open Hypergraphs
-open Conversions
-
 
 (* let _ =  *)
 (*   try *)
@@ -29,20 +27,14 @@ let test s =
   let s' = to_string t in
   try
     let t' = from_string s' in
-    (* if t<>t' then ( *)
-    (*   Format.eprintf "Warning: reparsing mismatch\n%s\n%a\n%s\n%a@." s rpp_full t s' rpp_full t'; *)
       let _ =
-    iso (graph_of_term t) (graph_of_term t') ||
+    iso (Graph.of_term t) (Graph.of_term t') ||
       (Format.eprintf "Error: reparsing mismatch\n%s\n%a\n%s\n%a@." s rpp t s' rpp t'; failwith "iso") in
     ()
-    (* ) *)
     ;
-    (* Format.eprintf "t = %a@." Term.pp t; *)
-    (* Format.eprintf "t' = %a@." Term.pp (term_of_term t); *)
-    (* Format.eprintf "t'' = %a@." NTerm.pp (nterm_of_term t); *)
-    let g = graph_of_term t in
-    let g' = graph_of_term (plain t) in
-    let g'' = graph_of_term (normalise t) in
+    let g = Graph.of_term t in
+    let g' = Graph.of_term (PTerm.get t) in
+    let g'' = Graph.of_term (NTerm.get t) in
     let _ = iso g g' || (Format.eprintf "Sanity failed iso:\ng = \n%ag'= \n%a@." gpp g gpp g'; failwith "iso") in
     let _ = iso g' g'' || (Format.eprintf "Sanity failed iso:\ng' = \n%ag''= \n%a@." gpp g' gpp g''; failwith "iso") in
     let _ = iso g g'' || (Format.eprintf "Sanity failed iso:\ng = \n%ag''= \n%a@." gpp g gpp g''; failwith "iso") in
@@ -52,8 +44,8 @@ let test s =
 let test_iso s s' =
   let t = from_string s in
   let t' = from_string s' in
-  let g = graph_of_term t in
-  let g' = graph_of_term t' in
+  let g = Graph.of_term t in
+  let g' = Graph.of_term t' in
   iso g g' || (Format.eprintf "Sanity failed iso:\nt = %a\nt'= %a@." rpp t rpp t'; failwith "iso")
   
 let _ = test "a|(b|c)"

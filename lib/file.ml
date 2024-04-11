@@ -1,5 +1,3 @@
-open Conversions
-
 type term = Types.positionned Term.t
 
 type t = term list
@@ -10,14 +8,14 @@ let first = List.hd
 
 let last l = List.hd (List.rev l)
 
-let compatible l x = Graph.iso Info.same_label (graph_of_term (first l)) (graph_of_term x)
+let compatible l x = Graph.iso Info.same_label (Graph.of_term (first l)) (Graph.of_term x)
 
 let append l x = l@[x]
 
 let check l =
-  let g = graph_of_term (first l) in
+  let g = Graph.of_term (first l) in
   List.iteri (fun i x ->
-      if not (Graph.iso Info.same_label_kvl g (graph_of_term x)) then
+      if not (Graph.iso Info.same_label_kvl g (Graph.of_term x)) then
         Format.kasprintf failwith "error: graph number %i is not isomorphic to the previous ones" (i+1)
     ) (List.tl l) 
 
@@ -41,7 +39,7 @@ let write f l =
   close_out o
 
 let export_term f t =
-  let g = graph_of_term t in
+  let g = Graph.of_term t in
   let view = Graph.bbox g in
   let image = Graph.draw g in
   Picture.pdf image view( f^".pdf");

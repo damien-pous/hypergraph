@@ -99,7 +99,7 @@ end
 module type EALGEBRA = sig
   include ALGEBRA
   val bigpar: int -> 'a t list -> 'a t
-  val inj: int -> inj -> 'a t -> 'a t
+  val inj: int -> inj -> 'a t -> 'a t (* first argument is the arity of the output *)
   val ser: 'a t list -> 'a t
   val str: 'a -> 'a t list -> 'a t
   val dot: 'a -> 'a t -> 'a t -> 'a t
@@ -138,9 +138,11 @@ end
 (* additional derived operations *)
 module type IEALGEBRA' = sig
   include IEALGEBRA
-  val forget: int -> 'a -> 'a t -> 'a t
+  val forget: int -> 'a -> 'a t -> 'a t (* first argument is the source to forget *)
   type 'a r
-  val term: 'a t -> 'a r
+  val to_term: 'a t -> 'a r
+  val of_term: 'a r -> 'a t
+  val get: 'a r -> 'a r
 end
 
 (* additional derived sourced operations *)
@@ -159,5 +161,7 @@ module type ISEALGEBRA' = sig
   module SI(M: SEALGEBRA): sig val eval: 'a t -> 'a M.t end
   val pp: pp_mode -> formatter -> #printable t -> unit  
   type 'a rt
-  val term: 'a t -> 'a rt
+  val to_term: 'a t -> 'a rt
+  val of_term: 'a rt -> 'a t
+  val get: 'a rt -> 'a rt
 end

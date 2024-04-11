@@ -93,8 +93,6 @@ Geometry:    geometric utilities to draw edges
 
 Graph:       graphs and associated functions
 
-Conversions: conversion functions between graphs and various kinds of terms
-
 Place:       placing graphs
 
 File:        HG files and functions to manipulate them

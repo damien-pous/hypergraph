@@ -1,5 +1,4 @@
 open Hypergraphs
-open Conversions
 
 open GMain
 
@@ -84,11 +83,11 @@ let set_graph g =
   graph := g;
   redraw();
   if (match current_term (fun _ -> ()) with
-      | Some t -> not (Graph.iso Info.same_label g (graph_of_term t))
+      | Some t -> not (Graph.iso Info.same_label g (Graph.of_term t))
       | None -> true)
   then
-    let t = term_of_graph g in
-    assert (Graph.iso Info.same_label g (graph_of_term t));
+    let t = Graph.to_term g in
+    assert (Graph.iso Info.same_label g (Graph.of_term t));
     Format.kasprintf entry#set_text "%a" (Term.pp Sparse) t;
     display_graph_infos g
 
@@ -97,7 +96,7 @@ let on_graph f = set_graph (f !graph)
 let text_changed _ =
   match current_term (fun _ -> label#set_label "Parsing error\n") with
   | Some r ->
-     let g = graph_of_term r in
+     let g = Graph.of_term r in
      display_graph_infos g;
      Place.sources_on_circle g;
      Place.graphviz g;
@@ -114,7 +113,7 @@ let load =
     (fun file ->
       let l = File.read file in
       Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (File.first l);
-      set_graph (graph_of_term (File.last l)))
+      set_graph (Graph.of_term (File.last l)))
 
 let save_to f =
   match current_term (fun _ -> failwith "cannot save while there are parsing errors") with
@@ -126,7 +125,7 @@ let save_to f =
          old
        ) else File.single t
      in
-     let t' = term_of_graph !graph in
+     let t' = Graph.to_term !graph in
      let l = File.append l t' in
      File.write f l;
      File.export_term f t'

@@ -13,3 +13,5 @@ let rec big b z = function
   | x::q -> b x (big b z q)
 
 let sqr x = x *. x
+
+let comp g f x = g (f x)
