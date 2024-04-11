@@ -40,9 +40,9 @@ let randomly g =
 let pp_dot f g =
   let ppp f x =
     let d = 2. *. x#radius /. Constants.inch in
-    Format.fprintf f "width=%f,height=%f,fixedsize=true,label=\"\"" d d;
+    Format.fprintf f "width=%g,height=%g,fixedsize=true,label=\"\"" d d;
     if x#placed then
-      Format.fprintf f ",pos=\"%f,%f\",pin=true" (P2.x x#pos) (P2.y x#pos)
+      Format.fprintf f ",pos=\"%g,%g\",pin=true" (P2.x x#pos) (P2.y x#pos)
   in
   let ppv f = function
   | Src i -> Format.fprintf f "s%i" i

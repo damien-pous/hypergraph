@@ -130,7 +130,7 @@ let qcurve_control_ortho x y z s =
     | true,false -> Some (qcurve_control x y z t1)
     | false,true -> Some (qcurve_control x y z t2)
     | true,true ->
-       Printf.printf "Warning: two potential control points: %f and %f\n%!" t1 t2;         
+       Printf.printf "Warning: two potential control points: %g and %g\n%!" t1 t2;
        Some (qcurve_control x y z t1)
 
 (** (approximate) length of the Bezier curve from x to y with control point pt *)

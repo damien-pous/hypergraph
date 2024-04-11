@@ -15,7 +15,7 @@ let p2_of_string s =
     (float_of_string (String.sub s (i+1) (String.length s-i-1)))
 
 let string_of_p2 p =
-  Format.sprintf "%f,%f" (P2.x p) (P2.y p)
+  Format.sprintf "%g,%g" (P2.x p) (P2.y p)
 
 let kv k v =
   (match k with
