@@ -68,7 +68,6 @@ interpreted keys:
 Misc:        miscellaneous utilities
 
 MSet         finite multisets
-Id:          identifiers and maps indexed by identifiers (no longer used)
 Seq:         finite sequences, index starting at 1, usually duplicate-free
 Perm:        finite support permutations
 Inj:         finite support injections
