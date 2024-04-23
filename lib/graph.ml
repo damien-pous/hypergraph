@@ -184,14 +184,15 @@ let promote x g =
 
 (* treewidth *)
 let width g =
-  let n = arity g + MSet.size g.ivertices in 
+  let n = arity g + MSet.size g.ivertices - 1 in (* any over-approximation of the treewidth *)
   let rec treewidth g =
-    if is_empty g || is_atomic g then arity g - 1
+    if MSet.is_empty g.ivertices then arity g - 1
     else let cs = reduced_components g in
          max (arity g - 1)
            (match MSet.size cs with
-            | 1 -> MSet.fold (fun v -> min (treewidth (promote v g))) n g.ivertices
-            | _ -> MSet.fold max (-1) (MSet.map (fun (_,c) -> treewidth c) cs))
+            | 1 -> let c = match MSet.case cs with Some ((_,c),_) -> c | _ -> assert false in
+                   MSet.fold (fun v -> min (treewidth (promote v c))) n c.ivertices
+            | _ -> MSet.fold (fun (_,c) -> max (treewidth c)) (-1) cs)
   in treewidth g
 
 let is_forget_point g k x = width (promote x g) <= k

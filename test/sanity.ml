@@ -46,8 +46,17 @@ let test_iso s s' =
   let t' = from_string s' in
   let g = Graph.of_term t in
   let g' = Graph.of_term t' in
-  iso g g' || (Format.eprintf "Sanity failed iso:\nt = %a\nt'= %a@." rpp t rpp t'; failwith "iso")
+  iso g g' ||
+    (Format.eprintf "Sanity failed iso:\nt = %a\nt'= %a@." rpp t rpp t'; failwith "iso")
+
+let test_tw s k =
+  let t = from_string s in
+  let g = Graph.of_term t in
+  let k' = Graph.width g in
+  k' = k ||
+    (Format.eprintf "Sanity failed treewidth of %s\nReturned %i instead of %i@." s k' k; failwith "tw")
   
+
 let _ = test "a|(b|c)"
 let _ = test "(a|b)|c"
 let _ = test "a.(b.c)"
@@ -87,3 +96,36 @@ let _ = test_iso "#4 fa | b" "#4 f(a | lb)"
 
 let _ = test_iso "(134)ld" "{324}d"
 let _ = test_iso "f(134)ld" "f{324}d"
+
+let _ = test_iso "*(u,v,w)" "f({14}u|{24}v|{34}w)"
+let _ = test_iso "*(u,v,w)" "f((24)llu|(241)llv|(13)(24)llw)"
+let _ = test_iso "*(u,v,w)" "fs(lv',(13)lw,(23)lu)"
+
+(* FA3 *)
+let _ = test_iso "fs(a,fs(b,c,0),0)" "fs(fs(a,b,0),c,0)"
+
+(* FX *)
+let _ = test_iso
+          "ff((23)lla | (42)llb | (14)l((312)*(e',d,g) | (312)*(h',c,-f)))"
+          "ff((13)lle | (14)llh | (24)l((312)*(c',d',a) | (312)*(-f',g',b)))"
+let _ = test_iso
+          "ff((13)lle | (14)llh | (24)l((312)*(c',d',a) | (312)*(-f',g',b)))"
+          "ff((1234)lf((243)lle' | (1243)llg | (24)(13)lld) | (1234)lf((24)(13)llc | (1243)ll-f | (243)llh') | (243)lla | (23)llb)"
+let _ = test_iso
+          "ff((13)lle | (14)llh | (24)l((312)*(c',d',a) | (312)*(-f',g',b)))"
+          "ff((1234)lf((243)lle' | (1243)lld | (24)(13)llg) | (1234)lf((1243)llc | (24)(13)ll-f | (243)llh') | (42)llb | (23)lla)"
+
+(* FD *)
+(* TODO *)
+
+let _ = test_tw "0" (-1)
+let _ = test_tw "a" (-1)
+let _ = test_tw "#1 0" 0
+let _ = test_tw "#2 0" 1
+let _ = test_tw "#3 a" 2
+let _ = test_tw "a.b" 2
+let _ = test_tw "(13)la" 2
+let _ = test_tw "*(a,b,c)" 3
+let _ = test_tw "*(a.a,b.b,c.c)" 3
+let _ = test_tw "fs(a,b,c)" 3
+let _ = test_tw "ffffs(a,b,c)" 3

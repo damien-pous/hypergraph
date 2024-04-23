@@ -6,13 +6,13 @@ let check f =
 let place f =
   let l = File.read f in
   let t = File.last l in
-  let g = Conversions.graph_of_raw t in
+  let g = Graph.of_term t in
   let _ = Place.sources_on_circle g in
   let _ = Place.graphviz g in
-  File.save f (File.append l t);
+  File.write f (File.append l t);
   File.export_term f t
 
-let export f = File.export (File.read f)
+let export f = File.export f (File.read f)
 
 let _ =
   Arg.(parse

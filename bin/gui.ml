@@ -89,7 +89,7 @@ let set_graph g =
   then
     let t = Graph.to_term g in
     assert (Graph.iso Info.same_label g (Graph.of_term t));
-    Format.kasprintf entry#set_text "%a" (Term.pp Sparse) t;
+    Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (PTerm.get t);
     display_graph_infos g
 
 let on_graph f = set_graph (f !graph)
