@@ -1,10 +1,11 @@
 MAIN=gui
 
-all:
-	dune build
+all:: test run
+
+test::
 	dune runtest
 
-run: 
+run::
 	dune runtest
 	dune exec ./bin/$(MAIN).exe
 
