@@ -106,18 +106,21 @@ let _ = test_iso "fs(a,fs(b,c,0),0)" "fs(fs(a,b,0),c,0)"
 
 (* FX *)
 let _ = test_iso
-          "ff((23)lla | (42)llb | (14)l((312)*(e',d,g) | (312)*(h',c,-f)))"
-          "ff((13)lle | (14)llh | (24)l((312)*(c',d',a) | (312)*(-f',g',b)))"
+          "ff ((23)lla | (42)llb | (14)l(*(g,e',d) | *(-f,h',c)))"
+          "ff ((13)lle | (14)llh | (24)l(*(a,c',d') | *(b,-f',g')))"
 let _ = test_iso
-          "ff((13)lle | (14)llh | (24)l((312)*(c',d',a) | (312)*(-f',g',b)))"
-          "ff((1234)lf((243)lle' | (1243)llg | (24)(13)lld) | (1234)lf((24)(13)llc | (1243)ll-f | (243)llh') | (243)lla | (23)llb)"
+          "ff ((13)lle | (14)llh | (24)l(*(a,c',d') | *(b,-f',g')))"
+          "ff ((1234)lf((243)lle' | (1243)llg | (24)(13)lld) | (1234)lf((24)(13)llc | (1243)ll-f | (243)llh') | (243)lla | (23)llb)"
 let _ = test_iso
-          "ff((13)lle | (14)llh | (24)l((312)*(c',d',a) | (312)*(-f',g',b)))"
-          "ff((1234)lf((243)lle' | (1243)lld | (24)(13)llg) | (1234)lf((1243)llc | (24)(13)ll-f | (243)llh') | (42)llb | (23)lla)"
+          "ff ((13)lle | (14)llh | (24)l(*(a,c',d') | *(b,-f',g')))"
+          "ff ((1234)lf((243)lle' | (1243)lld | (24)(13)llg) | (1234)lf((1243)llc | (24)(13)ll-f | (243)llh') | (42)llb | (23)lla)"
 
 (* FD *)
-(* TODO *)
+let _ = test_iso
+          "ff ((23)lla | (42)llb | (14)l(fs(*(i',h',c), *(-f,g',e), *(d,k',j'))))"
+          "ff ((13)llk | (14)llh | (24)l(fs(*(g,i,j), *(b,-f',d'), *(a,c',e'))))"
 
+                                            
 let _ = test_tw "0" (-1)
 let _ = test_tw "a" (-1)
 let _ = test_tw "#1 0" 0
