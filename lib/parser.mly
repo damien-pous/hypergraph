@@ -1,4 +1,4 @@
-%token LPAR RPAR LT GT COMMA SEMI STAR SERIES DOT QUOTE SHARP
+%token LPAR RPAR LT GT COMMA SEMI STAR SERIES DOT QUOTE HAT SHARP
 %token PAR NIL LFT FGT SIM EOF
 %token <Types.label> LABEL
 %token <Types.perm> PRM
@@ -45,6 +45,7 @@ term:
 | i=INJ; t=term { Inj(i,t) }
 | u=term; DOT; x=kvl; v=term { Dot(x,u,v) }
 | u=term; QUOTE { Cnv u }
+| label=LABEL; HAT { Dot([],Edg [Info.kv "label" label], Edg [Info.kv "label" (label^"^")]) }
 | STAR; x=kvl; LPAR; ts=separated_list(COMMA, term); RPAR { Str(x,ts) }
 | SERIES; LPAR; ts=separated_list(COMMA, term); RPAR { Ser ts }
 

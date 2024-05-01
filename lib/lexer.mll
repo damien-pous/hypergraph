@@ -52,6 +52,7 @@ rule token = parse
   | '.'                                    { DOT }
   | ','                                    { COMMA }
   | '''                                    { QUOTE }
+  | '^'                                    { HAT }
   | ';'                                    { SEMI }
   | '*'                                    { STAR }
   | '~'                                    { SIM }
