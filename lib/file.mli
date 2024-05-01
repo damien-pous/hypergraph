@@ -1,3 +1,4 @@
+open Hypergraphs
 open Types
 
 type term = positionned Term.t
@@ -31,3 +32,8 @@ val export: string -> t -> unit
 
 (* does the given HG file already exists *)
 val exists: string -> bool
+
+
+(* exporting images *)
+val pdf: image -> box -> string -> unit
+val svg: image -> box -> string -> unit

@@ -11,6 +11,3 @@ class virtual virtual_arena:
     method virtual private refresh: unit (* called on ensure/zoom/move, but not on resize *)
     inherit arena    
   end
-
-val pdf: image -> box -> string -> unit
-val svg: image -> box -> string -> unit

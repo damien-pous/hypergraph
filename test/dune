@@ -8,6 +8,6 @@
 (test
  (name geo)
  (modules geo)
- (libraries hypergraphs cairo2-gtk vg.cairo) 
+ (libraries hypergraphs hypergraphs_gtk) 
 ; (flags -w -27)
  )

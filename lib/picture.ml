@@ -114,28 +114,3 @@ class virtual virtual_arena =
       self#refresh
     
   end
-
-let pdf image view file =
-  (* export via cairo (could not find how to get the right fonts with vg) *)
-  let size = Box2.size view in
-  let w,h = V2.x size, V2.y size in
-  let i = Cairo.PDF.create file ~w ~h in
-  let cr = Cairo.create i in
-  let vgr = Vgr.create (Vgr_cairo.target cr) `Other in 
-  ignore (Vgr.render vgr (`Image (size, view, image)));
-  ignore (Vgr.render vgr `End);
-  Cairo.Surface.finish i
-
-let svg image view file =
-  (* export via vg (also possible via cairo as above) *)
-  let size = Box2.size view in
-  let o = open_out_bin file in
-  (* let title = "some nice graph" in *)
-  (* let description = "some description" in *)
-  let xmp = Vgr.xmp (* ~title ~description *) () in
-  let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel o) in
-  ignore (Vgr.render r (`Image (size, view, image)));
-  ignore (Vgr.render r `End);
-  close_out o
-  

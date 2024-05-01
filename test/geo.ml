@@ -1,4 +1,5 @@
 open Hypergraphs
+open Hypergraphs_gtk
 open GMain
 open Gg
 

@@ -1,5 +1,6 @@
-open Gg
+open Hypergraphs
 open Graph
+open Gg
 
 let npos g = Seq.lmap (fun v -> (vinfo g v)#pos)
 

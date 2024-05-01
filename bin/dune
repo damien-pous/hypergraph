@@ -2,7 +2,7 @@
  (public_name hg-gui)
  (name gui)
  (modules gui)
- (libraries hypergraphs cairo2-gtk vg.cairo))
+ (libraries hypergraphs hypergraphs_gtk hypergraphs_place hypergraphs_cairo))
 
 (executable
  (public_name scales)
@@ -13,4 +13,4 @@
 (executable
  (public_name hg)
  (modules hg)
- (libraries hypergraphs))
+ (libraries hypergraphs hypergraphs_place))

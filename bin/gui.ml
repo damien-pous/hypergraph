@@ -1,4 +1,7 @@
 open Hypergraphs
+open Hypergraphs_gtk
+open Hypergraphs_place
+open Hypergraphs_cairo
 
 open GMain
 

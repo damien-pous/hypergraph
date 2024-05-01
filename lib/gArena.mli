@@ -1,4 +1,4 @@
-open Types
+open Hypergraphs.Types
 
 val create:
   width:int ->
