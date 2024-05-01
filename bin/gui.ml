@@ -95,17 +95,19 @@ let set_graph g =
 let on_graph f = set_graph (f !graph)
 
 let text_changed _ =
+  active := `N;
   match current_term (fun _ -> label#set_label "Parsing error\n") with
   | Some r ->
      let g = Graph.of_term r in
-     display_graph_infos g;
-     Place.sources_on_circle g;
-     Place.graphviz g;
-     graph := g;
-     active := `N;
-     canvas#clear;
-     Graph.draw_on canvas ~iprops:true g;
-     arena#ensure (Graph.bbox g)
+     if not (Graph.iso Info.same_label g !graph) then (
+       display_graph_infos g;
+       Place.sources_on_circle g;
+       Place.graphviz g;
+       graph := g;
+       active := `N;
+       canvas#clear;
+       Graph.draw_on canvas ~iprops:true g;
+       arena#ensure (Graph.bbox g))     
   | None -> ()
 
 let load =
