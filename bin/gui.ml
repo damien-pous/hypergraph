@@ -14,7 +14,7 @@ let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
 let file = ref None
-let text = "a|lb|(23)lc|(13)l(fd)"
+let text = "a|lb|(23)lc|(13)lfd"
 
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~title:"HG" ()
@@ -25,6 +25,7 @@ let factory = new GMenu.factory menubar
 let accel_group = factory#accel_group
 let file_factory = new GMenu.factory (factory#add_submenu "File") ~accel_group
 let view_factory = new GMenu.factory (factory#add_submenu "View") ~accel_group
+let term_factory = new GMenu.factory (factory#add_submenu "Term") ~accel_group
 
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
@@ -92,7 +93,7 @@ let set_graph g =
   then
     let t = Graph.to_term g in
     assert (Graph.iso Info.same_label g (Graph.of_term t));
-    Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (PTerm.get t);
+    Format.kasprintf entry#set_text "%a" (Term.pp Sparse) t;
     display_graph_infos g
 
 let on_graph f = set_graph (f !graph)
@@ -102,8 +103,9 @@ let text_changed _ =
   match current_term (fun _ -> label#set_label "Parsing error\n") with
   | Some r ->
      let g = Graph.of_term r in
+     display_graph_infos g;
      if not (Graph.iso Info.same_label g !graph) then (
-       display_graph_infos g;
+       print_endline "term really changed, recomputing graph";
        Place.sources_on_circle g;
        Place.graphviz g;
        graph := g;
@@ -250,10 +252,17 @@ let fullscreen =
   if !fs then window#unfullscreen() else window#fullscreen();
   fs := not !fs
 
+let on_term f () =
+   match current_term (fun _ -> failwith "cannot work on the term while there are parsing errors") with
+   | Some t -> Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (f t)
+   | None -> ()                       
+
 let _ = file_factory#add_item "Open" ~key:GdkKeysyms._O ~callback:load
 let _ = file_factory#add_item "Save" ~key:GdkKeysyms._S ~callback:save
 let _ = file_factory#add_item "Quit" ~key:GdkKeysyms._Q ~callback:Main.quit
 let _ = view_factory#add_item "Fullscreen" ~key:GdkKeysyms._F ~callback:fullscreen
+let _ = term_factory#add_item "Normalise" ~key:GdkKeysyms._N ~callback:(on_term NTerm.get)
+let _ = term_factory#add_item "Desugar" ~key:GdkKeysyms._D ~callback:(on_term PTerm.get)
 
 let _ = GtkBase.Widget.add_events da#as_widget
           [ `KEY_PRESS; `BUTTON_MOTION; `BUTTON_PRESS; `BUTTON_RELEASE ]
