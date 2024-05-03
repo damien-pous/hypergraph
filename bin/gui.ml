@@ -23,8 +23,8 @@ let vbox = GPack.vbox ~homogeneous:false ~packing:window#add ()
 let menubar = GMenu.menu_bar ~packing:vbox#pack ()
 let factory = new GMenu.factory menubar
 let accel_group = factory#accel_group
-let file_menu = factory#add_submenu "File"
-let file_factory = new GMenu.factory file_menu ~accel_group
+let file_factory = new GMenu.factory (factory#add_submenu "File") ~accel_group
+let view_factory = new GMenu.factory (factory#add_submenu "View") ~accel_group
 
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
@@ -244,9 +244,16 @@ let key_press e =
        | _ -> mode := `Normal; edge l "")
   ); true
 
+let fullscreen =
+  let fs = ref false in
+  fun _ ->
+  if !fs then window#unfullscreen() else window#fullscreen();
+  fs := not !fs
+
 let _ = file_factory#add_item "Open" ~key:GdkKeysyms._O ~callback:load
 let _ = file_factory#add_item "Save" ~key:GdkKeysyms._S ~callback:save
 let _ = file_factory#add_item "Quit" ~key:GdkKeysyms._Q ~callback:Main.quit
+let _ = view_factory#add_item "Fullscreen" ~key:GdkKeysyms._F ~callback:fullscreen
 
 let _ = GtkBase.Widget.add_events da#as_widget
           [ `KEY_PRESS; `BUTTON_MOTION; `BUTTON_PRESS; `BUTTON_RELEASE ]
