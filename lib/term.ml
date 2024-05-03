@@ -142,7 +142,7 @@ let xmap f =
     | Ser l      -> Ser(List.map (xmap (k-1)) l)
     | Str(x,l)   -> Str(f.fi x, List.map (xmap 2) l)
     | Dot(x,u,v) -> Dot(f.fi x, xmap 2 u, xmap 2 v)
-    | Cnv u      -> Cnv(xmap 2 u)
+    | Cnv u      -> Cnv(xmap k u)
   in xmap
 let map f u = xmap f (arity u) u
 
