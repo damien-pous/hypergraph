@@ -85,8 +85,8 @@ let _ = test "f({123}a | {12}b | {324}d)"
 let _ = test "#3 lb"
 let _ = test "#<color=orange>,<color=yellow> lb"
 let _ = test "(13)lfa"
-(* let _ = test "#3 (12)a" *)
-(* let _ = test "{23}f(12)a" *)
+let _ = test "#3 (12)a"
+let _ = test "{23}f(12)a"
 
 let _ = test_iso "a|(b|c)" "(a|b)|c"
 let _ = test_iso "#3 a|(b|c)" "#3 (a|b)|c"
@@ -100,14 +100,7 @@ let _ = test_iso "#4 fa | b" "#4 f(a | lb)"
 let _ = test_iso "{23}a" "(123)la"
 let _ = test_iso "{23}fa" "(123)lfa"
 let _ = test_iso "{23}f(12)a" "(123)lf(12)a"
-let _ = test_iso "{23}f(12)a" "(13)lfa"
-
-let _ = test_iso "(13)lfa" "(123)lf(12)a"
-let _ = test_iso "(13)lfa" "{23}f(12)a"
-(* let _ = test_iso "(13)lfa" "(123)lfa'" *)
-(* let _ = test_iso "{23}f(12)a" "(123)lfa'" *)
-
-
+let _ = test_iso "{23}fa'" "(123)lfa'"
 let _ = test_iso "(134)ld" "{324}d"
 let _ = test_iso "f(134)ld" "f{324}d"
 

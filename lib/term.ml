@@ -2,14 +2,14 @@ open Types
 open Misc
 
 type 'a s = 
-  | Nil
+  | Nil of int
   | Par of 'a s * 'a s
   | Fgt of 'a * 'a s
   | Lft of 'a s
   | Prm of perm * 'a s
-  | Edg of 'a
+  | Edg of int * 'a
   (* derived *)
-  | Inj of inj * 'a s
+  | Inj of int * inj * 'a s
   | Ser of 'a s list
   | Str of 'a * 'a s list
   | Dot of 'a * 'a s * 'a s
@@ -19,32 +19,43 @@ type 'a u = 'a s
 module U = struct
 type 'a t = 'a s
 
-let nil' = Nil
-let nil _ = nil'
+let rec arity = function
+  | Nil k | Edg (k,_) | Inj (k,_,_) -> k
+  | Par(u,_) | Prm(_,u) | Cnv u -> arity u
+  | Fgt(_,u) -> arity u -1
+  | Lft u -> arity u + 1
+  | Ser l -> List.length l + 1
+  | Str(_,l) -> List.length l
+  | Dot(_,_,_) -> 2
+
+let nil k = Nil k
 let rec par u v =
   match u,v with
-  | Nil,w | w,Nil -> w
+  | Nil _,w | w,Nil _ -> w
   | Par(u,v),w -> par u (Par(v,w))
   | _ -> Par(u,v)
-let bigpar _ = big par Nil
+let bigpar k = big par (nil k)
 let fgt x u = Fgt(x,u)
 let lft u = Lft u
-let cnv u =
+let prmr u = let k = arity u in Perm.of_cycle [k-1;k]
+let is_prmr p u = Perm.eq p (prmr u)
+let rec xprm b p = function
+  | Prm(q,u) -> xprm b (Perm.comp q p) u
+  | u -> if Perm.eq p Perm.id then u
+         else if b && is_prmr p u then Cnv u
+         else Prm(p,u)
+let prm p = xprm true p
+let cnv u = prm (prmr u) u
+(* the above two operations are not safe on flexible terms
+   (because converse arity is flexible), instead,
+   we use the following ones during parsing *)
+let flexible_prm p = xprm false p
+let flexible_cnv u =
   match u with
   | Cnv u -> u
   | u -> Cnv u
-let prm p u =
-  if Perm.eq p Perm.id then u else
-  let k = Perm.size p in
-  if k>=2 && Perm.eq p (Perm.of_cycle [k-1;k]) then cnv u else
-  match u with
-  | Prm(q,u) -> Prm (Perm.comp q p, u)
-  | u -> Prm(p,u)
-let edg' x = Edg x
-let edg _ = edg'
-let inj' i u = Inj(i,u)
-let inj k i u = if Inj.is_id k i then u else  inj' i u
-(* let inj _ = inj' *)
+let edg k x = Edg(k,x)
+let inj k i u = Inj(k,i,u)
 let ser l = Ser l
 let str i l = Str(i,l)
 let rec dot x u w =
@@ -52,99 +63,54 @@ let rec dot x u w =
   | Dot(y,u,v) -> dot y u (Dot(x,v,w))
   | _ -> Dot(x,u,w)
 
-let arity,source =
-  let zero = 0,true in
-  let strict k = k,false in
-  let weak k = k,true in
-  let max (i,b as ib) (j,c as jc) =
-    match b,c with
-    | true,true -> weak (max i j)
-    | false,true when j<=i -> ib
-    | true,false when i<=j -> jc
-    | false,false when i=j -> ib
-    | _ -> failwith "arity mismatch"
-  in
-  let pred = function
-    | 0,true as a -> a
-    | 0,false -> failwith "arity mismatch"
-    | i,b -> i-1,b
-  in
-  let succ = function
-    | i,b -> i+1,b
-  in
-  let eq k = function
-    | i,false when i=k -> ()
-    | i,true when i<=k -> ()
-    | _ -> failwith "arity mismatch"
-  in
-  let rec arity = function
-    | Nil | Edg _ -> zero
-    | Par(u,v) -> max (arity u) (arity v)
-    | Fgt(_,u) -> pred (arity u)
-    | Lft u -> succ (arity u)
-    | Prm(p,u) -> max (weak (Perm.size p)) (arity u)
-    | Inj(i,u) -> eq (Inj.dom i) (arity u); (weak (Inj.cod i))
-    | Ser l ->
-       let k = List.length l in
-       List.iter (fun u -> eq k (arity u)) l; strict (k+1)
-    | Str(_,l) ->
-       let k = List.length l in
-       List.iter (fun u -> eq 2 (arity u)) l; strict k
-    | Dot(_,u,v) -> eq 2 (arity u); eq 2 (arity v); strict 2
-    | Cnv u -> max (weak 2) (arity u)
-  in
-  (fun u -> fst (arity u)), (fun s u -> ignore (max (strict (Seq.size s)) (arity u)); (s,u))
-
 let rec isize = function
-  | Nil | Edg _ -> 0
+  | Nil _ | Edg _ -> 0
   | Par(u,v)  | Dot(_,u,v) -> isize u + isize v
   | Fgt(_,u) -> 1 + isize u
   | Ser l -> big (+) 0 (List.map isize l)
   | Str(_,l) -> 1 + big (+) 0 (List.map isize l)
-  | Lft u | Prm(_,u) | Inj(_,u) | Cnv u -> isize u
+  | Lft u | Prm(_,u) | Inj(_,_,u) | Cnv u -> isize u
 
 let rec esize = function
-  | Nil -> 0
+  | Nil _ -> 0
   | Edg _ -> 1
   | Par(u,v) | Dot(_,u,v) -> esize u + esize v
   | Ser l | Str(_,l) -> big (+) 0 (List.map esize l)
-  | Fgt(_,u) | Lft u | Prm(_,u) | Inj(_,u) | Cnv u -> esize u
+  | Fgt(_,u) | Lft u | Prm(_,u) | Inj(_,_,u) | Cnv u -> esize u
     
 let size g = arity g + isize g + esize g
 
 let width _ = assert false      (* not useful raw terms? *)
 
 module I(X: EALGEBRA) = struct
-  let rec xeval k = function
-    | Nil        -> X.nil k
-    | Par(u,v)   -> X.par (xeval k u) (xeval k v)
-    | Fgt(x,u)   -> X.fgt x (xeval (k+1) u)
-    | Lft u      -> X.lft (xeval (k-1) u)
-    | Prm(p,u)   -> X.prm p (xeval k u)
-    | Edg l      -> X.edg k l
-    | Inj(i,u)   -> X.inj k i (xeval (Inj.dom i) u)
-    | Ser l      -> X.ser (List.map (xeval (k-1)) l)
-    | Str(x,l)   -> X.str x (List.map (xeval 2) l)
-    | Dot(x,u,v) -> X.dot x (xeval 2 u) (xeval 2 v)
-    | Cnv u      -> X.cnv (xeval k u)
-  let eval u = xeval (arity u) u
+  let rec eval = function
+    | Nil k      -> X.nil k
+    | Par(u,v)   -> X.par (eval u) (eval v)
+    | Fgt(x,u)   -> X.fgt x (eval u)
+    | Lft u      -> X.lft (eval u)
+    | Prm(p,u)   -> X.prm p (eval u)
+    | Edg (k,l)  -> X.edg k l
+    | Inj(k,i,u) -> X.inj k i (eval u)
+    | Ser l      -> X.ser (List.map (eval) l)
+    | Str(x,l)   -> X.str x (List.map eval l)
+    | Dot(x,u,v) -> X.dot x (eval u) (eval v)
+    | Cnv u      -> X.cnv (eval u)
 end
 
-let xmap f =
-  let rec xmap k = function
-    | Nil        -> Nil
-    | Par(u,v)   -> Par(xmap k u, xmap k v)
-    | Fgt(x,u)   -> Fgt(f.fi x, xmap (k+1) u)
-    | Lft u      -> Lft(xmap (k-1) u)
-    | Prm(p,u)   -> Prm(p, xmap k u)
-    | Edg x      -> Edg(f.fe k x)
-    | Inj(i,u)   -> Inj(i,xmap (Inj.dom i) u)
-    | Ser l      -> Ser(List.map (xmap (k-1)) l)
-    | Str(x,l)   -> Str(f.fi x, List.map (xmap 2) l)
-    | Dot(x,u,v) -> Dot(f.fi x, xmap 2 u, xmap 2 v)
-    | Cnv u      -> Cnv(xmap k u)
-  in xmap
-let map f u = xmap f (arity u) u
+let map f = 
+  let rec map = function
+    | Nil k      -> Nil k
+    | Par(u,v)   -> Par(map u, map v)
+    | Fgt(x,u)   -> Fgt(f.fi x, map u)
+    | Lft u      -> Lft(map u)
+    | Prm(p,u)   -> Prm(p, map u)
+    | Edg(k,x)   -> Edg(k,f.fe k x)
+    | Inj(k,i,u) -> Inj(k,i,map u)
+    | Ser l      -> Ser(List.map map l)
+    | Str(x,l)   -> Str(f.fi x, List.map map l)
+    | Dot(x,u,v) -> Dot(f.fi x, map u, map v)
+    | Cnv u      -> Cnv(map u)
+  in map
 
 type l = BOT | PAR | DOT | PRF | CNV 
 let head = function
@@ -152,12 +118,12 @@ let head = function
   | Fgt(_,_)
   | Lft _   
   | Prm(_,_)
-  | Inj(_,_)   -> PRF
+  | Inj(_,_,_) -> PRF
   | Dot(_,_,_) -> DOT
   | Cnv _      -> CNV
   | Ser _   
   | Str(_,_)
-  | Nil     
+  | Nil _
   | Edg _      -> BOT
 
 let pp mode =
@@ -167,13 +133,13 @@ let pp mode =
     let paren fmt = if o <= i then fmt else "("^^fmt^^")" in
     let pp = pp i in
     match u with
-    | Nil        -> Format.fprintf f "0"
+    | Nil _      -> Format.fprintf f "0"
     | Par(u,v)   -> Format.fprintf f (paren "%a | %a") pp u pp v
-    | Edg l      -> ppx f l
+    | Edg (_,l)  -> ppx f l
     | Fgt(x,u)   -> Format.fprintf f (paren "f%a%a") ppx x pp u
     | Lft u      -> Format.fprintf f (paren "l%a") pp u
     | Prm(p,u)   -> Format.fprintf f (paren "%a%a") Perm.pp p pp u
-    | Inj(i,u)   -> Format.fprintf f (paren "%a%a") Inj.pp i pp u
+    | Inj(_,i,u) -> Format.fprintf f (paren "%a%a") Inj.pp i pp u
     | Ser l      -> Format.fprintf f "s(%a)" (pp_print_list "," pp) l
     | Str(x,l)   -> Format.fprintf f "*%a(%a)" ppx x (pp_print_list "," pp) l
     | Dot(x,u,v) -> Format.fprintf f (paren "%a.%a%a") pp u ppx x pp v
@@ -181,9 +147,6 @@ let pp mode =
 in pp BOT
 
 end
-let nil' = U.nil'
-let edg' = U.edg'
-let inj' = U.inj'
 
 type 'a t = 'a seq * 'a u
 
@@ -192,21 +155,80 @@ let isize (_,u) = U.isize u
 let esize (_,u) = U.esize u
 let width _ = assert false      (* not useful on raw terms? *)
 
-let source = U.source
-let flexible f u = let k = U.arity u in source (Seq.init k f) u
+let source s u =
+  assert(Seq.size s = U.arity u);
+  (s,u)
 
-let map f (s,u) = (Seq.imap f.fs s, U.xmap f (Seq.size s) u)
+let map f (s,u) = (Seq.imap f.fs s, U.map f u)
 
 let pp mode f (s,u) =
   if mode=Sparse || Seq.forall (fun s -> s#pp_empty mode) s then
     let k = Seq.size s in
-    if U.arity u = k then U.pp mode f u
-    else Format.fprintf f "#%i %a" k (U.pp mode) u
+    (* if U.arity u = k then U.pp mode f u else *)
+    Format.fprintf f "#%i %a" k (U.pp mode) u
   else
     let ppx f x = x#pp mode f in
     Format.fprintf f "#%a %a" (pp_print_list "," ppx) (Seq.to_list s) (U.pp mode) u
 
 module SI(X:SEALGEBRA) = struct
   module UI = U.I(X.U)
-  let eval (s,u) = X.source s (UI.xeval (Seq.size s) u)
+  let eval (s,u) = X.source s (UI.eval u)
 end
+
+module Flexible = struct
+  type 'a t = 'a u
+  let rec up k = function
+    | Nil _      -> Nil k
+    | Par(u,v)   -> Par(up k u, up k v)
+    | Fgt(x,u)   -> Fgt(x, up (k+1) u)
+    | Lft u      -> Lft(up (k-1) u)
+    | Prm(p,u)   -> Prm(p, up k u)
+    | Edg(_,x)   -> Edg(k,x)
+    | Inj(_,i,u) -> Inj(k,i,u)
+    | Cnv u      -> Cnv(up k u)
+    | (Ser _ | Str(_,_) | Dot(_,_,_)) as u ->
+       if k = U.arity u then u else failwith "arity mismatch"
+  let up' k u =
+    let n = U.arity u in
+    if k=n then u
+    else if n<k then up k u
+    else failwith "arity mismatch"
+  let nil() = U.nil 0
+  let edg x = U.edg 0 x
+  let par u v =
+    let n = U.arity u in
+    let m = U.arity v in
+    if n=m then U.par u v
+    else if n<m then U.par (up m u) v
+    else U.par u (up n v)
+  let fgt x u =
+    match U.arity u with
+    | 0 -> U.fgt x (up 1 u)
+    | _ -> U.fgt x u
+  let lft = U.lft
+  let prm p u =
+    let m,n = Perm.size p, U.arity u in
+    if m<=n then U.flexible_prm p u
+    else U.flexible_prm p (up m u)
+  let inj i u = U.inj (Inj.cod i) i (up' (Inj.dom i) u)
+  let ser l =
+    let k = List.length l in
+    U.ser (List.map (up' k) l)
+  let str x l = 
+    U.str x (List.map (up' 2) l)
+  let dot x u v = U.dot x (up' 2 u) (up' 2 v)
+  let cnv u =
+    let n = U.arity u in
+    if n<2 then U.flexible_cnv (up 2 u)
+    else U.flexible_cnv u
+end
+
+let fixed s u =
+  let m,n = Seq.size s, U.arity u in
+  if n=m then s,u
+  else if n<m then s,Flexible.up m u
+  else failwith "arity mismatch"
+
+let flexible f u =
+  let k = U.arity u in
+  Seq.init k f, u

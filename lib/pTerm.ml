@@ -44,6 +44,9 @@ let par u v = Par(u,v)
 let fgt x u = Fgt(x,u)
 let lft u = Lft u
 let prm p u = Prm(p,u)
+(* let rec prm p = function *)
+(*   | Prm(q,u) -> prm (Perm.comp q p) u *)
+(*   | u -> if Perm.eq p Perm.id then u else Prm(p,u) *)
 let edg k x = Edg(k,x)
 
 let map f =

@@ -105,7 +105,6 @@ let text_changed _ =
      let g = Graph.of_term r in
      display_graph_infos g;
      if not (Graph.iso Info.same_label g !graph) then (
-       print_endline "term really changed, recomputing graph";
        Place.sources_on_circle g;
        Place.graphviz g;
        graph := g;

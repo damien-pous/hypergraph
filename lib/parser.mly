@@ -29,34 +29,35 @@
 
 %{
     open Term
+    open Flexible
 %}
 
 %%
 
 term:
 | LPAR; t=term; RPAR { t }
-| NIL { Nil }
-| u=term; PAR; v=term { Par(u,v) }
-| FGT; x=kvl; t=term { Fgt(x,t) }
-| LFT; t=term { Lft t }
-| p=PRM; t=term { Prm(p,t) }
-| label=LABEL; x=kvl { Edg (Info.kv "label" label :: x) }
+| NIL { nil() }
+| u=term; PAR; v=term { par u v }
+| FGT; x=kvl; t=term { fgt x t }
+| LFT; t=term { lft t }
+| p=PRM; t=term { prm p t }
+| label=LABEL; x=kvl { edg (Info.kv "label" label :: x) }
 (* syntactic sugar *)
-| i=INJ; t=term { Inj(i,t) }
-| u=term; DOT; x=kvl; v=term { Dot(x,u,v) }
-| u=term; QUOTE { Cnv u }
-| label=LABEL; HAT { Dot([],Edg [Info.kv "label" label], Edg [Info.kv "label" (label^"^")]) }
-| STAR; x=kvl; LPAR; ts=separated_list(COMMA, term); RPAR { Str(x,ts) }
-| SERIES; LPAR; ts=separated_list(COMMA, term); RPAR { Ser ts }
+| i=INJ; t=term { inj i t }
+| u=term; DOT; x=kvl; v=term { dot x u v }
+| u=term; QUOTE { cnv u }
+| label=LABEL; HAT { dot [] (edg [Info.kv "label" label]) (edg [Info.kv "label" (label^"^")]) }
+| STAR; x=kvl; LPAR; ts=separated_list(COMMA, term); RPAR { str x ts }
+| SERIES; LPAR; ts=separated_list(COMMA, term); RPAR { ser ts }
 
 kvl:
 | LT; h=separated_list(SEMI, KEYVAL); k=kvl GT { h @ k }
 | { [] }
 
 sterm_:
-| k=FIX; t=term { source (Seq.init k (fun _ -> [])) t }
+| k=FIX; t=term { fixed (Seq.init k (fun _ -> [])) t }
 | t=term { flexible (fun _ -> []) t }
-| SHARP; h=separated_nonempty_list(COMMA, kvl); t=term {source (Seq.of_list h) t}
+| SHARP; h=separated_nonempty_list(COMMA, kvl); t=term { fixed (Seq.of_list h) t }
 
 sterm:
 | t=sterm_; EOF { t }

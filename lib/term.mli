@@ -1,23 +1,21 @@
 open Types
 
-type 'a s =
-  | Nil
-  | Par of 'a s * 'a s
-  | Fgt of 'a * 'a s
-  | Lft of 'a s
-  | Prm of perm * 'a s
-  | Edg of 'a
-  (* derived *)
-  | Inj of inj * 'a s
-  | Ser of 'a s list
-  | Str of 'a * 'a s list
-  | Dot of 'a * 'a s * 'a s
-  | Cnv of 'a s
+include ISEALGEBRA
 
-include ISEALGEBRA with type 'a u = 'a s
+module Flexible: sig
+  type 'a t
+  val nil: unit -> 'a t
+  val par: 'a t -> 'a t -> 'a t
+  val fgt: 'a -> 'a t-> 'a t
+  val lft: 'a t -> 'a t
+  val prm: perm -> 'a t -> 'a t
+  val edg: 'a -> 'a t
+  val inj: inj -> 'a t -> 'a t
+  val ser: 'a t list -> 'a t
+  val str: 'a -> 'a t list -> 'a t
+  val dot: 'a -> 'a t -> 'a t -> 'a t
+  val cnv: 'a t -> 'a t
+end
 
-val nil': 'a u
-val inj': inj -> 'a u -> 'a u
-val edg': 'a -> 'a u
-
-val flexible: (int -> 'a) -> 'a u -> 'a t
+val fixed: 'a seq -> 'a Flexible.t -> 'a t
+val flexible: (int -> 'a) -> 'a Flexible.t -> 'a t
