@@ -13,4 +13,4 @@
 (executable
  (public_name hg)
  (modules hg)
- (libraries hypergraphs hypergraphs_place))
+ (libraries hypergraphs hypergraphs_place hypergraphs_cairo))
