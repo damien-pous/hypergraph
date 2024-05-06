@@ -127,12 +127,11 @@ let edg arity einfo =
     edges = MSet.single { einfo; neighbours=Seq.init arity src } }
 
 let map f g =
-  (* TODO: need to memoize [f] to guarantee physical identities *)
-  let _ = failwith "Warning: fix Graph.map before using it" in
+  let fi = memo f.fi in
   { arity = g.arity;
-    ivertices = MSet.map f.fi g.ivertices;
+    ivertices = MSet.map fi g.ivertices;
     edges = MSet.map (fun x -> { einfo = f.fe (Seq.size x.neighbours) x.einfo;
-                                neighbours = Seq.map (vmap f.fi) x.neighbours }) g.edges }
+                                neighbours = Seq.map (vmap fi) x.neighbours }) g.edges }
 
 let add_edge einfo neighbours g =
   let e = {einfo;neighbours} in

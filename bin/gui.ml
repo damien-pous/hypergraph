@@ -15,6 +15,7 @@ let active = ref `N
 let mode = ref `Normal
 let file = ref None
 let text = "a|lb|(23)lc|(13)lfd"
+let hist = History.create()
 
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~title:"HG" ()
@@ -24,6 +25,7 @@ let menubar = GMenu.menu_bar ~packing:vbox#pack ()
 let factory = new GMenu.factory menubar
 let accel_group = factory#accel_group
 let file_factory = new GMenu.factory (factory#add_submenu "File") ~accel_group
+let edit_factory = new GMenu.factory (factory#add_submenu "Edit") ~accel_group
 let view_factory = new GMenu.factory (factory#add_submenu "View") ~accel_group
 let term_factory = new GMenu.factory (factory#add_submenu "Term") ~accel_group
 
@@ -54,11 +56,19 @@ let dialog title action stock stock' filter =
     | None -> ()
   ); dlg#misc#hide()
 
+let checkpoint() =
+  Format.kasprintf (History.save hist) "%a" (Term.pp Full) (Graph.to_term !graph)
+
+let term_of_string s =
+  let l = Lexing.from_string s in
+  let t = Parser.sterm Lexer.token l in
+  Term.map Info.kvl_to_positionned t
+
+let graph_of_string s =
+  Graph.of_term (term_of_string s)
+
 let current_term k =
-  try
-    let l = Lexing.from_string entry#text in
-    let t = Parser.sterm Lexer.token l in
-    Some (Term.map Info.kvl_to_positionned t)
+  try Some (term_of_string entry#text)
   with e -> k e; None
 
 let redraw() =
@@ -96,7 +106,19 @@ let set_graph g =
     Format.kasprintf entry#set_text "%a" (Term.pp Sparse) t;
     display_graph_infos g
 
-let on_graph f = set_graph (f !graph)
+let undo _ =
+  match History.undo hist with
+  | Some g -> set_graph (graph_of_string g)
+  | None -> print_endline "no more undos"
+
+let redo _ =
+  match History.redo hist with
+  | Some g -> set_graph (graph_of_string g)
+  | None -> print_endline "no more redos"
+
+let on_graph f =
+  checkpoint();
+  set_graph (f !graph)
 
 let text_changed _ =
   active := `N;
@@ -117,10 +139,12 @@ let text_changed _ =
 let load =
   dialog "Open graph file" `OPEN `OPEN `OPEN 
     (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ())
-    (fun file ->
+    (fun file ->      
       let l = File.read file in
+      History.reset hist;
       Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (File.first l);
-      set_graph (Graph.of_term (File.last l)))
+      set_graph (Graph.of_term (File.last l));
+      checkpoint())
 
 let save_to f =
   match current_term (fun _ -> failwith "cannot save while there are parsing errors") with
@@ -161,8 +185,8 @@ let button_press ev =
   let state = GdkEvent.Button.state ev in
   not (Gdk.Convert.test_modifier `CONTROL state) &&
   match !mode, catch() with
-   | `Normal, `V x -> active := `V x; true
-   | `Normal, `E x -> active := `E x; true
+   | `Normal, `V x -> checkpoint(); active := `V x; true
+   | `Normal, `E x -> checkpoint(); active := `E x; true
    | `InsertEdge l, `V v -> mode := `InsertEdge (Seq.snoc l v); true
    | `InsertEdge l, `N ->
         let v = ivertex() in
@@ -187,8 +211,8 @@ let motion_notify _ =
 
 let scale s =
   match catch() with
-  | `V v -> (Graph.vinfo !graph v)#scale s; redraw()
-  | `E e -> (Graph.einfo e)#scale s; redraw()
+  | `V v -> checkpoint(); (Graph.vinfo !graph v)#scale s; redraw()
+  | `E e -> checkpoint(); (Graph.einfo e)#scale s; redraw()
   | `N -> ()
 
 let lift() =
@@ -218,11 +242,12 @@ let edge l s =
   let e = Info.positionned_edge (Seq.size l) s in
   let e,g = Graph.add_edge e l !graph in
   Place.center_edge g e;
+  checkpoint();
   set_graph g
 
 let center() =
   match catch() with
-  | `E e -> Place.center_edge !graph e; redraw()
+  | `E e -> checkpoint(); Place.center_edge !graph e; redraw()
   | _ -> ()
   
 let key_press e =
@@ -259,6 +284,8 @@ let on_term f () =
 let _ = file_factory#add_item "Open" ~key:GdkKeysyms._O ~callback:load
 let _ = file_factory#add_item "Save" ~key:GdkKeysyms._S ~callback:save
 let _ = file_factory#add_item "Quit" ~key:GdkKeysyms._Q ~callback:Main.quit
+let _ = edit_factory#add_item "Undo" ~key:GdkKeysyms._Z ~callback:undo
+let _ = edit_factory#add_item "Redo" ~key:GdkKeysyms._R ~callback:redo
 let _ = view_factory#add_item "Fullscreen" ~key:GdkKeysyms._F ~callback:fullscreen
 let _ = term_factory#add_item "Normalise" ~key:GdkKeysyms._N ~callback:(on_term NTerm.get)
 let _ = term_factory#add_item "Desugar" ~key:GdkKeysyms._D ~callback:(on_term PTerm.get)

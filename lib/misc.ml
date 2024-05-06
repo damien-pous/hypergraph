@@ -15,3 +15,12 @@ let rec big b z = function
 let sqr x = x *. x
 
 let comp g f x = g (f x)
+
+let memo f =
+  let m = ref [] in
+  fun x ->
+  try List.assq x !m
+  with Not_found ->
+    let y = f x in
+    m := (x,y) :: !m;
+    y

@@ -12,3 +12,5 @@ val big: ('a -> 'a -> 'a) -> 'a -> 'a list -> 'a
 val sqr: float -> float
 
 val comp: ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
+
+val memo: ('a -> 'b) -> 'a -> 'b
