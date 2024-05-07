@@ -117,7 +117,7 @@ let redo _ =
   | None -> print_endline "no more redos"
 
 let on_graph f =
-  checkpoint();
+  if !mode = `Normal then checkpoint();
   set_graph (f !graph)
 
 let text_changed _ =
@@ -242,7 +242,6 @@ let edge l s =
   let e = Info.positionned_edge (Seq.size l) s in
   let e,g = Graph.add_edge e l !graph in
   Place.center_edge g e;
-  checkpoint();
   set_graph g
 
 let center() =
@@ -262,7 +261,7 @@ let key_press e =
        | "f" -> forget()
        | "p" -> promote()
        | "d" | "r" -> remove()
-       | "e" -> mode := `InsertEdge Seq.empty
+       | "e" -> checkpoint(); mode := `InsertEdge Seq.empty
        | _ -> ())
    | `InsertEdge l ->
       (match GdkEvent.Key.string e with
