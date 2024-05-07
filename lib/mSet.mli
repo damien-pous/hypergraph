@@ -33,4 +33,4 @@ val iteri: (int -> 'a -> unit) -> 'a t -> unit
 val index: 'a -> 'a t -> int
 val nth: 'a t -> int -> 'a
 
-val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit [@@ocaml.toplevel_printer]

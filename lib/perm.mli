@@ -28,4 +28,4 @@ val comp: t -> t -> t           (* [comp p q] is q°p *)
 val inv: t -> t
 
 (* pretty printing *)
-val pp: Format.formatter -> t -> unit
+val pp: Format.formatter -> t -> unit [@@ocaml.toplevel_printer]

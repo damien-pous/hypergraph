@@ -26,4 +26,4 @@ val size: 'a t -> int
 
 val id: int -> int t
 
-val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit [@@ocaml.toplevel_printer]

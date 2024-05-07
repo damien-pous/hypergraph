@@ -47,4 +47,4 @@ val crop: t -> t
    and returns the corresponding permutation *)
 val map: Perm.t -> t -> t * Perm.t
 
-val pp: Format.formatter -> t -> unit
+val pp: Format.formatter -> t -> unit [@@ocaml.toplevel_printer]

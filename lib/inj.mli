@@ -20,4 +20,4 @@ val is_id: int -> t -> bool
 val extend: t -> int -> Perm.t * int 
 
 (* pretty printing *)
-val pp: Format.formatter -> t -> unit
+val pp: Format.formatter -> t -> unit [@@ocaml.toplevel_printer]
