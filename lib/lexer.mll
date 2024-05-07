@@ -4,6 +4,7 @@
   let diglist_of_string s =
     List.init (String.length s) (fun i -> dig_of_char s.[i])
   let numlist_of_string x s =
+    (* TOFIX, fails with "1" ",2"  *)
     let n = String.length s in
     let rec split acc i =
       if i=n then acc
@@ -63,7 +64,8 @@ rule token = parse
   | '[' (nint as x) ((',' nint)+ as q) ']' { PRM (Perm.of_list (numlist_of_string x q)) }
   (* injections: any number of elements, if only one large int, then have it start with a 0 *)
   | '{' (ndigit* as s) '}'                 { INJ (Inj.of_list (diglist_of_string s)) }
-  | "{0" (nint as x)((',' nint)* as q) '}' { INJ (Inj.of_list (numlist_of_string x q)) }
+  | "{0" (nint as x) '}'                   { INJ (Inj.of_list (numlist_of_string x "")) }
+  | "{" (nint as x)((',' nint)+ as q) '}'  { INJ (Inj.of_list (numlist_of_string x q)) }
   | '#'                                    { SHARP }
   | '#' (digit+ as x)                      { FIX (int_of_string x) }
   | label as s

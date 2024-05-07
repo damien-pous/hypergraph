@@ -31,8 +31,8 @@ let extend l k =
 
 let pp f i =
   match i with
-  | [] -> ()
-  | [x] when x>9 -> Format.fprintf f "0%i" x
+  | [] -> Format.fprintf f "{}"
+  | [x] when x>9 -> Format.fprintf f "{0%i}" x
   | _ ->
      let sep = if cod i > 9 then "," else "" in
      Format.fprintf f "{%a}" (pp_print_list sep Format.pp_print_int) i

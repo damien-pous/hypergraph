@@ -29,6 +29,7 @@ let rec arity = function
   | Dot(_,_,_) -> 2
 
 let nil k = Nil k
+let edg k x = Edg(k,x)
 let rec par u v =
   match u,v with
   | Nil _,w | w,Nil _ -> w
@@ -46,16 +47,18 @@ let rec xprm b p = function
          else Prm(p,u)
 let prm p = xprm true p
 let cnv u = prm (prmr u) u
-(* the above two operations are not safe on flexible terms
-   (because converse arity is flexible), instead,
+let inj k i u =
+  if Inj.is_id k i then u
+  else Inj(k,i,u)
+(* the above three operations are not safe on flexible terms
+   (because converse/inj arity is flexible), instead,
    we use the following ones during parsing *)
 let flexible_prm p = xprm false p
 let flexible_cnv u =
   match u with
   | Cnv u -> u
   | u -> Cnv u
-let edg k x = Edg(k,x)
-let inj k i u = Inj(k,i,u)
+let flexible_inj k i u = Inj(k,i,u)
 let ser l = Ser l
 let str i l = Str(i,l)
 let rec dot x u w =
@@ -210,7 +213,7 @@ module Flexible = struct
     let m,n = Perm.size p, U.arity u in
     if m<=n then U.flexible_prm p u
     else U.flexible_prm p (up m u)
-  let inj i u = U.inj (Inj.cod i) i (up' (Inj.dom i) u)
+  let inj i u = U.flexible_inj (Inj.cod i) i (up' (Inj.dom i) u)
   let ser l =
     let k = List.length l in
     U.ser (List.map (up' k) l)

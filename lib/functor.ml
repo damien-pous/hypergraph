@@ -10,11 +10,11 @@ module E(M: ALGEBRA) =
       if k<2 then failwith "invalid converse arity";
       prm (Perm.of_cycle[k-1;k]) u
     let inj k i u =
-      let p,n = Inj.extend i k in
       let rec l = function
         | 0 -> u
-        | n -> lft (l(n-1))
+        | n -> lft (l (n-1))
       in
+      let p,n = Inj.extend i k in
       prm p (l n)
     let ser l =
       let k = List.length l+1 in
