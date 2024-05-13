@@ -15,7 +15,7 @@ let active = ref `N
 let mode = ref `Normal
 let file = ref None
 let text = "a|lb|(23)lc|(13)lfd"
-let hist = History.create()
+let hist = History.create text
 
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~title:"HG" ()
@@ -31,7 +31,7 @@ let term_factory = new GMenu.factory (factory#add_submenu "Term") ~accel_group
 
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
-let entry = GEdit.entry ~text ~editable:true ~packing:(vbox#pack ~expand:false) ()
+let entry = GEdit.entry ~editable:true ~packing:(vbox#pack ~expand:false) ()
 let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:40 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
 
 let dialog title action stock stock' filter =
@@ -117,8 +117,8 @@ let redo _ =
   | None -> print_endline "no more redos"
 
 let on_graph f =
-  if !mode = `Normal then checkpoint();
-  set_graph (f !graph)
+  set_graph (f !graph);
+  if !mode = `Normal then checkpoint()
 
 let text_changed _ =
   active := `N;
@@ -133,7 +133,8 @@ let text_changed _ =
        active := `N;
        canvas#clear;
        Graph.draw_on canvas ~iprops:true g;
-       arena#ensure (Graph.bbox g))     
+       arena#ensure (Graph.bbox g);
+       checkpoint())
   | None -> ()
 
 let load =
@@ -141,10 +142,10 @@ let load =
     (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ())
     (fun file ->      
       let l = File.read file in
-      History.reset hist;
       Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (File.first l);
       set_graph (Graph.of_term (File.last l));
-      checkpoint())
+      checkpoint();
+      History.clear hist)
 
 let save_to f =
   match current_term (fun _ -> failwith "cannot save while there are parsing errors") with
@@ -185,8 +186,8 @@ let button_press ev =
   let state = GdkEvent.Button.state ev in
   not (Gdk.Convert.test_modifier `CONTROL state) &&
   match !mode, catch() with
-   | `Normal, `V x -> checkpoint(); active := `V x; true
-   | `Normal, `E x -> checkpoint(); active := `E x; true
+   | `Normal, `V x -> active := `V x; true
+   | `Normal, `E x -> active := `E x; true
    | `InsertEdge l, `V v -> mode := `InsertEdge (Seq.snoc l v); true
    | `InsertEdge l, `N ->
         let v = ivertex() in
@@ -194,6 +195,7 @@ let button_press ev =
    | _ -> false
     
 let button_release _ =
+  (match !active with `V _ | `E _ -> checkpoint() | `N -> ());
   active := `N; false
 
 let motion_notify _ =
@@ -211,8 +213,8 @@ let motion_notify _ =
 
 let scale s =
   match catch() with
-  | `V v -> checkpoint(); (Graph.vinfo !graph v)#scale s; redraw()
-  | `E e -> checkpoint(); (Graph.einfo e)#scale s; redraw()
+  | `V v -> (Graph.vinfo !graph v)#scale s; checkpoint(); redraw()
+  | `E e -> (Graph.einfo e)#scale s; checkpoint(); redraw()
   | `N -> ()
 
 let lift() =
@@ -242,11 +244,12 @@ let edge l s =
   let e = Info.positionned_edge (Seq.size l) s in
   let e,g = Graph.add_edge e l !graph in
   Place.center_edge g e;
-  set_graph g
+  set_graph g;
+  checkpoint()
 
 let center() =
   match catch() with
-  | `E e -> checkpoint(); Place.center_edge !graph e; redraw()
+  | `E e -> Place.center_edge !graph e; checkpoint(); redraw()
   | _ -> ()
   
 let key_press e =
@@ -261,7 +264,7 @@ let key_press e =
        | "f" -> forget()
        | "p" -> promote()
        | "d" | "r" -> remove()
-       | "e" -> checkpoint(); mode := `InsertEdge Seq.empty
+       | "e" -> mode := `InsertEdge Seq.empty
        | _ -> ())
    | `InsertEdge l ->
       (match GdkEvent.Key.string e with
@@ -300,6 +303,6 @@ let _ = da#event#connect #key_press ~callback:key_press
 let _ = entry#connect#changed ~callback:text_changed
 let _ = window#connect#destroy ~callback:Main.quit
 let _ = window#add_accel_group accel_group
-let _ = text_changed ()
+let _ = entry#set_text text; History.clear hist
 let _ = window#show ()
 let _ = Main.main ()
