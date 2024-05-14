@@ -251,13 +251,9 @@ let subst s =
   let h = graph_of_string s in
   match catch() with
   | `E e ->
-     let c =
-       let g = !graph in
-       Geometry.center (Seq.lmap (fun i -> (Graph.vinfo g i)#pos) (Graph.neighbours e))
-     in
      on_graph (fun g ->
          let g,es = Graph.subst_edge g e h in
-         Graph.iter_ivertices (fun i -> i#move c) h;
+         Graph.iter_ivertices (fun i -> i#move (Graph.einfo e)#pos) h;
          MSet.iter (Place.center_edge g) es;
          g)
   | `V _ -> print_endline "cannot substitute a vertex"
