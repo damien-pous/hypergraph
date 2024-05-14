@@ -285,6 +285,19 @@ let key_press e =
        | "2" -> subst "{21}-|{23}-"
        | "3" -> subst "{31}-|{32}-"
        | "e" -> mode := `InsertEdge Seq.empty
+       | "h" -> print_endline 
+                  "** keys **
+c:     center edge
+-/+:   shrink/enlarge element
+i:     add inner vertex
+l:     add new source (lift)
+f:     forget source 
+p:     promote inner vertex as source
+d/r:   remove element
+e:     insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- to name the edge)
+s:     substitute ternary edge with a star
+1/2/3: substitute ternary edge with a V (angle at given neighbour)
+h:     print this help message"
        | _ -> ())
    | `InsertEdge l ->
       (match GdkEvent.Key.string e with
