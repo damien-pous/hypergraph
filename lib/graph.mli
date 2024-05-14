@@ -54,6 +54,8 @@ val rem_vertex: 'a vertex -> 'a graph -> 'a graph
 val add_edge: 'a -> 'a vertex seq -> 'a graph -> 'a edge * 'a graph
 val add_ivertex: 'a -> 'a graph -> 'a graph
 
+val subst_edge: 'a graph -> 'a edge -> 'a graph -> 'a graph * 'a edge mset
+
 (* isomorphim check, using the given function to compare edge infos *)
 val iso: ('a -> 'a -> bool) -> 'a graph -> 'a graph -> bool
 
@@ -101,6 +103,8 @@ module U: sig
   val rem_ivertex: 'a -> 'a ugraph -> 'a ugraph
   val rem_source: int -> 'a ugraph -> 'a ugraph
   val rem_vertex: 'a vertex -> 'a ugraph -> 'a ugraph
+
+  val subst_edge: 'a ugraph -> 'a edge -> 'a ugraph -> 'a ugraph * 'a edge mset
   
   val add_edge: 'a -> 'a vertex seq -> 'a ugraph -> 'a edge * 'a ugraph
   val add_ivertex: 'a -> 'a ugraph -> 'a ugraph    

@@ -140,6 +140,17 @@ let add_edge einfo neighbours g =
 let rem_edge e g =
   { g with edges = MSet.remq e g.edges }
 
+let subst_edge g e h =
+  if Seq.size e.neighbours <> h.arity then failwith "subst_edge: arity mismatch";
+  let new_edges =
+    nmap (function
+        | Src i -> Seq.get e.neighbours i
+        | x -> x) h.edges
+  in
+  { g with
+    ivertices = MSet.union g.ivertices h.ivertices;
+    edges = MSet.union (MSet.remq e g.edges) new_edges }, new_edges
+
 let add_ivertex v g =
   { g with ivertices = MSet.add v g.ivertices }
 
@@ -352,6 +363,7 @@ let iter_infos f g =
 
 let add_edge e n (s,g) = let e,g = U.add_edge e n g in e,(s,g)
 let rem_edge e (s,g) = (s,U.rem_edge e g)
+let subst_edge (s,g) e (_,h) = let g',m = U.subst_edge g e h in (s, g'), m
 let add_ivertex v (s,g) = (s,U.add_ivertex v g)
 let rem_ivertex v (s,g) = (s,U.rem_ivertex v g)
 let rem_last_source (s,g) =

@@ -238,7 +238,7 @@ let forget() =
   | `V (Src i) -> on_graph (Graph.forget i)
   | `V (Inn _) -> print_endline "cannot forget an inner vertex (use r to remove it)"
   | `E _ -> print_endline "cannot forget an edge (use r to remove it)"
-  | _ -> ()
+  | `N -> ()
 
 let edge l s =
   let e = Info.positionned_edge (Seq.size l) s in
@@ -246,6 +246,22 @@ let edge l s =
   Place.center_edge g e;
   set_graph g;
   checkpoint()
+
+let subst s =
+  let h = graph_of_string s in
+  match catch() with
+  | `E e ->
+     let c =
+       let g = !graph in
+       Geometry.center (Seq.lmap (fun i -> (Graph.vinfo g i)#pos) (Graph.neighbours e))
+     in
+     on_graph (fun g ->
+         let g,es = Graph.subst_edge g e h in
+         Graph.iter_ivertices (fun i -> i#move c) h;
+         MSet.iter (Place.center_edge g) es;
+         g)
+  | `V _ -> print_endline "cannot substitute a vertex"
+  | `N -> ()
 
 let center() =
   match catch() with
@@ -264,6 +280,10 @@ let key_press e =
        | "f" -> forget()
        | "p" -> promote()
        | "d" | "r" -> remove()
+       | "s" -> subst "*(-,-,-)"
+       | "1" -> subst "{12}-|{13}-"
+       | "2" -> subst "{21}-|{23}-"
+       | "3" -> subst "{31}-|{32}-"
        | "e" -> mode := `InsertEdge Seq.empty
        | _ -> ())
    | `InsertEdge l ->
