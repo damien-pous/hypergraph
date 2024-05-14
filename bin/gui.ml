@@ -276,6 +276,7 @@ let key_press e =
        | "f" -> forget()
        | "p" -> promote()
        | "d" | "r" -> remove()
+       | "." -> subst "-.-"
        | "s" -> subst "*(-,-,-)"
        | "1" -> subst "{12}-|{13}-"
        | "2" -> subst "{21}-|{23}-"
@@ -291,6 +292,7 @@ f:     forget source
 p:     promote inner vertex as source
 d/r:   remove element
 e:     insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- to name the edge)
+.:     substitute binary edge with a sequential composition
 s:     substitute ternary edge with a star
 1/2/3: substitute ternary edge with a V (angle at given neighbour)
 h:     print this help message"
