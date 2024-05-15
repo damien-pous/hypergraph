@@ -1,4 +1,4 @@
-MAIN=gui
+MAIN=locate
 
 all:: test run
 

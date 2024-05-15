@@ -296,7 +296,7 @@ e:     insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- 
 s:     substitute ternary edge with a star
 1/2/3: substitute ternary edge with a V (angle at given neighbour)
 h:     print this help message"
-       | _ -> ())
+       | s -> Format.printf "skipping key %s@." s)
    | `InsertEdge l ->
       (match GdkEvent.Key.string e with
        | ("a" | "b" | "c" | "d" | "e") as s -> mode := `Normal; edge l s

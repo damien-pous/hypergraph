@@ -5,6 +5,12 @@
  (libraries hypergraphs hypergraphs_gtk hypergraphs_place hypergraphs_cairo))
 
 (executable
+ (public_name hg-locate)
+ (name locate)
+ (modules locate)
+ (libraries hypergraphs hypergraphs_gtk hypergraphs_place hypergraphs_cairo))
+
+(executable
  (public_name scales)
  (name scales)
  (modules scales)
