@@ -15,7 +15,7 @@ let sources_on_circle g =
            2. *. Float.pi *. float_of_int (i-1) /. float_of_int k
            -. Float.pi_div_2 -. Float.pi /. float_of_int k))
   in
-  iter_sources (fun i s -> (* if not s#placed then *) s#move (spos i)) g
+  iter_sources (fun i s -> if not s#placed then s#move (spos i)) g
 
 let randomly g =
   let n = size g in
