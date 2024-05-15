@@ -36,6 +36,20 @@ end = struct
 end
 
 
+let term_of_string s =
+  let l = Lexing.from_string s in
+  let t = Parser.sterm Lexer.token l in
+  Term.map Info.kvl_to_positionned t
+
+let graph_of_string s =
+  Graph.of_term (term_of_string s)
+
+let center_edges s =
+  let g = graph_of_string s in
+  Graph.iter_edges' (Place.center_edge g) g;
+  let t = Graph.to_term g in
+  Format.asprintf "%a" (Term.pp Full) t
+
 (* initial width/height *)
 let width = 400
 let height = 400
@@ -45,8 +59,16 @@ let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
 let file = ref None
-let text = "#<pos=5,0>,<pos=500,0> f<pos=100,100>(f<pos=100,-100>({234}f<pos=400,100>({234}- | {14}d') | {234}f<pos=400,-100>({14}c' | {234}-) | {14}b) | {13}a)"
-let hist = History.create (Stack.create text)
+
+let text = center_edges
+             "#<pos=0,0>,<pos=500,0> 
+              f<pos=100,100>(f<pos=100,-100>({234}f<pos=400,100>({234}g | {14}d) | {234}f<pos=400,-100>({14}c | {234}h) | {14}b) | {13}a)"
+let text2 = center_edges
+              "#<pos=0,0>,<pos=500,0> f<pos=100,100>(f<pos=100,-100>({234}f<pos=250,0>({134}f<pos=400,-100>({134}d | {234}-f) | {124}f<pos=400,100>({134}c | {234}g) | {234}e) | {14}a) | {13}b)"
+let hist =
+  let s = Stack.create text2 in
+  let s = Stack.push s text in
+  History.create s
 
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~title:"HG" ()
@@ -90,14 +112,6 @@ let dialog title action stock stock' filter =
 let checkpoint() =
   Format.kasprintf (fun s -> History.save hist (Stack.replace (History.present hist) s)) "%a"
     (Term.pp Full) (Graph.to_term !graph)
-
-let term_of_string s =
-  let l = Lexing.from_string s in
-  let t = Parser.sterm Lexer.token l in
-  Term.map Info.kvl_to_positionned t
-
-let graph_of_string s =
-  Graph.of_term (term_of_string s)
 
 let current_term k =
   try Some (term_of_string entry#text)
@@ -161,7 +175,6 @@ let text_changed _ =
      if not (Graph.iso Info.same_label g !graph) then (
        Place.sources_on_circle g;
        Place.graphviz g;
-       Graph.iter_edges' (Place.center_edge g) g;
        graph := g;
        active := `N;
        canvas#clear;
@@ -299,11 +312,13 @@ let set_stack stack =
 let split() =
   match catch() with
   | `E e ->
+     let l = (Graph.einfo e)#label in
+     let l = if l="" then "-" else l in
      let s = History.present hist in
-     let s = Stack.replace s (subst e "{31}-|{32}-") in
-     let s = Stack.push s (subst e "{21}-|{23}-") in
-     let s = Stack.push s (subst e "{12}-|{13}-") in
-     let s = Stack.push s (subst e "*(-,-,-)") in
+     let s = Stack.replace s (Format.kasprintf (subst e) "{31}%s1|{32}%s2" l l) in
+     let s = Stack.push s (Format.kasprintf (subst e) "{21}%s1|{23}%s3" l l) in
+     let s = Stack.push s (Format.kasprintf (subst e) "{12}%s2|{13}%s3" l l) in
+     let s = Stack.push s (Format.kasprintf (subst e) "*(%s1,%s2,%s3)" l l l) in
      set_stack s
   | `V _ -> print_endline "cannot split a vertex"
   | `N -> ()  
@@ -325,20 +340,14 @@ let discard force =
     | None -> print_endline "congrats: this was the last case!"
   else print_endline "cannot discard this case: the graph is hard and of treewidth at most three"
 
+let duplicate() =
+  let s = History.present hist in
+  History.save hist (Stack.push s (Stack.current s))
+
 let key_press e =
   (match !mode with
    | `Normal ->
       (match GdkEvent.Key.string e with
-       | "c" -> center()
-       | "-" -> scale (1. /. 1.1)
-       | "+" -> scale 1.1
-       | "i" -> ignore(ivertex())
-       | "l" -> lift()
-       | "f" -> forget()
-       | "p" -> promote()
-       | "d" | "r" -> remove()
-       | "s" -> split()
-       | "e" -> mode := `InsertEdge Seq.empty
        | "h" -> print_endline 
                   "** keys **
 c:     center edge
@@ -352,16 +361,29 @@ e:     insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- 
 s:     split ternary edge, generating four subcases
 k:     discard current case (when not hard-TW3)
 K:     discard current case (whatever the situation)
+D:     duplicate current case
 h:     print this help message"
+       | "c" -> center()
+       | "-" -> scale (1. /. 1.1)
+       | "+" -> scale 1.1
+       | "i" -> ignore(ivertex())
+       | "l" -> lift()
+       | "f" -> forget()
+       | "p" -> promote()
+       | "d" | "r" -> remove()
+       | "s" -> split()
+       | "e" -> mode := `InsertEdge Seq.empty
        | "k" -> discard false
        | "K" -> discard true
+       | "D" -> duplicate()
        | _ when GdkEvent.Key.keyval e = GdkKeysyms._Left -> left()
        | _ when GdkEvent.Key.keyval e = GdkKeysyms._Right -> right()
+       | "" -> ()
        | s -> Format.printf "skipping key %s@." s)
    | `InsertEdge l ->
       (match GdkEvent.Key.string e with
-       | ("a" | "b" | "c" | "d" | "e") as s -> mode := `Normal; edge l s
-       | _ -> mode := `Normal; edge l "")
+       | "-" | "" -> mode := `Normal; edge l ""
+       | s -> mode := `Normal; edge l s)
   ); true
 
 let fullscreen =

@@ -2,10 +2,15 @@ MAIN=locate
 
 all:: test run
 
+build::
+	dune build
+
 test::
+	dune build
 	dune runtest
 
 run::
+	dune build
 	dune runtest
 	dune exec ./bin/$(MAIN).exe
 

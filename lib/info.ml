@@ -38,7 +38,9 @@ let pp_kvl f l =
       l
 
 let forbidden s =
-  s="" || String.contains s 'f' || String.contains s 'l' || String.contains s 's'
+  s=""
+  || String.contains s 'f' || String.contains s 'l' || String.contains s 's'
+  || s.[0]<'a' || s.[0]>'z'
 
 let pp_label f = function
   | s when forbidden s -> Format.fprintf f "-%s" s

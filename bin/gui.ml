@@ -247,10 +247,19 @@ let edge l s =
   set_graph g;
   checkpoint()
 
+let rec recomp l = function
+  | [] -> ""
+  | [x] -> x
+  | x::q -> x^l^recomp l q      
+
 let subst s =
-  let h = graph_of_string s in
   match catch() with
   | `E e ->
+     let l = (Graph.einfo e)#label in
+     let l = if l="" then "-" else l in
+     let s = String.split_on_char '-' s in     
+     let s = recomp l s in
+     let h = graph_of_string s in
      on_graph (fun g ->
          let g,es = Graph.subst_edge g e h in
          Graph.iter_ivertices (fun i -> i#move (Graph.einfo e)#pos) h;
@@ -268,20 +277,6 @@ let key_press e =
   (match !mode with
    | `Normal ->
       (match GdkEvent.Key.string e with
-       | "c" -> center()
-       | "-" -> scale (1. /. 1.1)
-       | "+" -> scale 1.1
-       | "i" -> ignore(ivertex())
-       | "l" -> lift()
-       | "f" -> forget()
-       | "p" -> promote()
-       | "d" | "r" -> remove()
-       | "." -> subst "-.-"
-       | "s" -> subst "*(-,-,-)"
-       | "1" -> subst "{12}-|{13}-"
-       | "2" -> subst "{21}-|{23}-"
-       | "3" -> subst "{31}-|{32}-"
-       | "e" -> mode := `InsertEdge Seq.empty
        | "h" -> print_endline 
                   "** keys **
 c:     center edge
@@ -296,11 +291,26 @@ e:     insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- 
 s:     substitute ternary edge with a star
 1/2/3: substitute ternary edge with a V (angle at given neighbour)
 h:     print this help message"
+       | "c" -> center()
+       | "-" -> scale (1. /. 1.1)
+       | "+" -> scale 1.1
+       | "i" -> ignore(ivertex())
+       | "l" -> lift()
+       | "f" -> forget()
+       | "p" -> promote()
+       | "d" | "r" -> remove()
+       | "." -> subst "-1.-2"
+       | "s" -> subst "*(-1,-2,-3)"
+       | "1" -> subst "{12}-2|{13}-3"
+       | "2" -> subst "{21}-1|{23}-3"
+       | "3" -> subst "{31}-1|{32}-2"
+       | "e" -> mode := `InsertEdge Seq.empty
+       | "" -> ()
        | s -> Format.printf "skipping key %s@." s)
    | `InsertEdge l ->
       (match GdkEvent.Key.string e with
-       | ("a" | "b" | "c" | "d" | "e") as s -> mode := `Normal; edge l s
-       | _ -> mode := `Normal; edge l "")
+       | "-" | "" -> mode := `Normal; edge l ""
+       | s -> mode := `Normal; edge l s)
   ); true
 
 let fullscreen =
