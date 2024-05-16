@@ -14,3 +14,5 @@ val positionned_edge: int -> label -> positionned
 
 val same_label_kvl: kvl -> kvl -> bool
 val same_label: #printable -> #printable -> bool
+
+val escape: string -> string

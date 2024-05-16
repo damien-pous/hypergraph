@@ -255,8 +255,7 @@ let rec recomp l = function
 let subst s =
   match catch() with
   | `E e ->
-     let l = (Graph.einfo e)#label in
-     let l = if l="" then "-" else l in
+     let l = Info.escape (Graph.einfo e)#label in
      let s = String.split_on_char '-' s in     
      let s = recomp l s in
      let h = graph_of_string s in

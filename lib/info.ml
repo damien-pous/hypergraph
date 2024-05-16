@@ -42,10 +42,9 @@ let forbidden s =
   || String.contains s 'f' || String.contains s 'l' || String.contains s 's'
   || s.[0]<'a' || s.[0]>'z'
 
-let pp_label f = function
-  | s when forbidden s -> Format.fprintf f "-%s" s
-  | s -> Format.pp_print_string f s
+let escape s = if forbidden s then "-"^s else s
 
+let pp_label f s = Format.pp_print_string f (escape s)
 
 class virtual holder_ = 
   object

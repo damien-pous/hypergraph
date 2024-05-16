@@ -312,8 +312,7 @@ let set_stack stack =
 let split() =
   match catch() with
   | `E e ->
-     let l = (Graph.einfo e)#label in
-     let l = if l="" then "-" else l in
+     let l = Info.escape (Graph.einfo e)#label in
      let s = History.present hist in
      let s = Stack.replace s (Format.kasprintf (subst e) "{31}%s1|{32}%s2" l l) in
      let s = Stack.push s (Format.kasprintf (subst e) "{21}%s1|{23}%s3" l l) in
