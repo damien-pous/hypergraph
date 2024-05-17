@@ -14,6 +14,8 @@ module Stack: sig
   val pop: 'a t -> 'a t option
   val replace: 'a t -> 'a -> 'a t
   val push: 'a t -> 'a -> 'a t
+  val pos: 'a t -> int
+  val size: 'a t -> int
 end = struct
   type 'a t = { left: 'a list; here: 'a; right: 'a list }
   let create here = { left=[]; here; right=[] }
@@ -33,6 +35,8 @@ end = struct
   let replace x here = { x with here }
   let push x here  =
     { x with here; right = x.here::x.right }
+  let pos x = List.length x.left + 1
+  let size x = List.length x.left + 1 + List.length x.right
 end
 
 
@@ -85,7 +89,7 @@ let term_factory = new GMenu.factory (factory#add_submenu "Term") ~accel_group
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
 let entry = GEdit.entry ~editable:true ~packing:(vbox#pack ~expand:false) ()
-let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:40 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
+let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:60 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
 
 let dialog title action stock stock' filter =
   let dlg = GWindow.file_chooser_dialog
@@ -123,7 +127,9 @@ let redraw() =
   arena#refresh
 
 let display_graph_infos g =
+  let s = History.present hist in
   let pp_graph_infos f =
+    Format.fprintf f "Graph %i/%i\n" (Stack.pos s) (Stack.size s);    
     Format.fprintf f "Treewidth: %i\n" (Graph.width g);
     match MSet.size (Graph.components g) with
     | 0 -> Format.fprintf f "Empty"
