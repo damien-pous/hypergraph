@@ -14,3 +14,5 @@ val sqr: float -> float
 val comp: ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
 
 val memo: ('a -> 'b) -> 'a -> 'b
+
+val iter: int -> ('a -> 'a) -> 'a -> 'a
