@@ -24,6 +24,8 @@ val is_atomic: 'a graph -> bool
 val is_empty: 'a graph -> bool
 val is_hard: 'a graph -> bool
 
+val width_less_than: int -> 'a graph -> bool
+
 val components: 'a graph -> 'a graph mset
 val reduce: 'a graph -> iseq * 'a graph 
 val reduced_components: 'a graph -> (iseq * 'a graph) mset
@@ -81,6 +83,8 @@ module U: sig
   val is_atomic: 'a ugraph -> bool
   val is_empty: 'a ugraph -> bool
   val is_hard: 'a ugraph -> bool
+
+  val width_less_than: int -> 'a ugraph -> bool
   
   val components: 'a ugraph -> 'a ugraph mset
   (* decompose a graph g into an injection i and a full graph g' such that g = {i}g' *)

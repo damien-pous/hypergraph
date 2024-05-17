@@ -192,7 +192,7 @@ let promote x g =
                | v -> v)
               g.edges }
 
-(* treewidth *)
+(* direct treewidth computation *)
 let width g =
   let n = arity g + MSet.size g.ivertices - 1 in (* any over-approximation of the treewidth *)
   let rec treewidth g =
@@ -205,7 +205,26 @@ let width g =
             | _ -> MSet.fold (fun (_,c) -> max (treewidth c)) (-1) cs)
   in treewidth g
 
-let is_forget_point g k x = width (promote x g) <= k
+(* checking that treewidth is below a threshold (more efficient) *)
+let width_less_than k =
+  let rec check g =
+    arity g <= k+1 &&
+    (MSet.is_empty g.ivertices ||
+       let cs = reduced_components g in
+       match MSet.size cs with
+       | 1 -> let c = match MSet.case cs with Some ((_,c),_) -> c | _ -> assert false in
+              MSet.exists (fun v -> check (promote v c)) c.ivertices
+       | _ -> MSet.forall (fun (_,c) -> check c) cs)
+  in
+  check
+
+(* computing the width from below (more efficient in practice) *)
+let _ = ignore width
+let width g =
+  let rec w k = if width_less_than k g then k else w (k+1) in
+  w (arity g - 1)
+
+let is_forget_point g k x = width_less_than k (promote x g)
 let find_forget_point g k = MSet.find (is_forget_point g k) g.ivertices
 let forget_points g k = MSet.filter (is_forget_point g k) g.ivertices
 
@@ -337,6 +356,8 @@ let is_prime x = sext U.is_prime x
 let is_fullprime x = sext U.is_fullprime x
 let is_atomic x = sext U.is_atomic x
 let is_hard x = sext U.is_hard x
+
+let width_less_than k = sext (U.width_less_than k)
 
 let components (s,g) = MSet.map (fun g -> (s,g)) (U.components g)
 
