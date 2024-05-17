@@ -51,8 +51,8 @@ let center_edges s =
   Format.asprintf "%a" (Term.pp Full) t
 
 (* initial width/height *)
-let width = 400
-let height = 400
+let width = 800
+let height = 800
 
 let canvas = new Picture.basic_canvas
 let graph = ref (Graph.nil ())
@@ -62,9 +62,9 @@ let file = ref None
 
 let text = center_edges
              "#<pos=0,0>,<pos=500,0> 
-              f<pos=100,100>(f<pos=100,-100>({234}f<pos=400,100>({234}g | {14}d) | {234}f<pos=400,-100>({14}c | {234}h) | {14}b) | {13}a)"
+              f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({234}f<pos=400,100;label=z;radius=6>({234}-f | {14}d) | {234}f<pos=400,-100;label=t;radius=6>({14}c | {234}-g) | {14}b) | {13}a)"
 let text2 = center_edges
-              "#<pos=0,0>,<pos=500,0> f<pos=100,100>(f<pos=100,-100>({234}f<pos=250,0>({134}f<pos=400,-100>({134}d | {234}-f) | {124}f<pos=400,100>({134}c | {234}g) | {234}e) | {14}a) | {13}b)"
+              "#<pos=0,0>,<pos=500,0> f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({234}f<pos=250,0>({134}f<pos=400,-100;label=t;radius=6>({134}d | {234}-f) | {124}f<pos=400,100;label=z;radius=6>({134}c | {234}g) | {234}e) | {14}a) | {13}b)"
 let hist =
   let s = Stack.create text2 in
   let s = Stack.push s text in
@@ -174,7 +174,7 @@ let text_changed _ =
      display_graph_infos g;
      if not (Graph.iso Info.same_label g !graph) then (
        Place.sources_on_circle g;
-       Place.graphviz g;
+       (* Place.graphviz g; *)
        graph := g;
        active := `N;
        canvas#clear;
@@ -332,12 +332,37 @@ let right() =
   | Some s -> set_stack s
   | None -> print_endline "already on rightmost case"
 
+
+let find_ivertex l =
+  match MSet.find (fun i -> i#label = l) (Graph.ivertices !graph) with
+  | None -> failwith ("missing inner vertex "^l)
+  | Some v -> v
+
+let mayskip() =
+  if not (Graph.is_hard !graph) then
+    (print_endline "skipping this case since the graph is not hard"; true)
+  else
+    let skip_sep msg l =
+      if Graph.is_separator !graph l then
+        (print_endline ("skipping this since "^msg^" is a separation pair"); true)
+      else false
+    in
+    let x = find_ivertex "x" in
+    let y = find_ivertex "y" in
+    let z = find_ivertex "z" in
+    let t = find_ivertex "t" in
+    skip_sep "xz" [x;z] ||
+    skip_sep "xt" [x;t] ||
+    skip_sep "yz" [y;z] ||
+    skip_sep "yt" [y;t]
+     
+
 let discard force =
-  if force || (Graph.width !graph >= 4) || (not (Graph.is_hard !graph)) then
+  if force || mayskip() then
     match Stack.pop (History.present hist) with
     | Some s -> set_stack s
     | None -> print_endline "congrats: this was the last case!"
-  else print_endline "cannot discard this case: the graph is hard and of treewidth at most three"
+  else print_endline "no obvious reason to discard this case"
 
 let duplicate() =
   let s = History.present hist in
