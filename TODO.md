@@ -27,3 +27,15 @@
 
 # sanity
 - more checks
+
+
+# recent
+- r for converse
+- ternary edge/shape specification (exclusion of specific boudins)
+- find necessarily connecting binary edges
+- add triangle minor case
+- find checkpoints (non-minimal cases in localisation)
+- draw separation pairs (+ find them)
+- find subcases (subgraphs)
+- export/use connectivity api ?
+- store neighbourhood / connectivity / key parameters
