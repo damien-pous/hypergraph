@@ -38,6 +38,8 @@ val is_anchor: 'a graph -> 'a -> bool
 val find_anchor: 'a graph -> 'a option
 val anchors: 'a graph -> 'a mset
 
+val is_separator: 'a graph -> 'a list -> bool
+
 val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a graph -> unit
 val iter_edges': ('a edge -> unit) -> 'a graph -> unit
 val iter_edges'': ('a edge -> 'a -> 'a vertex seq -> unit) -> 'a graph -> unit
@@ -97,6 +99,8 @@ module U: sig
   val is_anchor: 'a ugraph -> 'a -> bool
   val find_anchor: 'a ugraph -> 'a option
   val anchors: 'a ugraph -> 'a mset
+
+  val is_separator: 'a ugraph -> 'a list -> bool
  
   val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a ugraph -> unit
   val iter_edges': ('a edge -> unit) -> 'a ugraph -> unit

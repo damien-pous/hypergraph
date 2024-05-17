@@ -236,7 +236,13 @@ let find_anchor g = MSet.find (is_anchor g) g.ivertices
 let anchors g = MSet.filter (is_anchor g) g.ivertices
 
 let is_hard g = not (is_atomic g) && is_fullprime g && find_anchor g = None
-  
+
+let is_separator g l =
+  let cs = components (List.fold_right promote l g) in
+  MSet.forall (fun c ->
+      let t = touched_sources c in
+      not (ISeq.mem 1 t && ISeq.mem 2 t)) cs
+
 (* checking isomorphism
    naively for now: just try to match edges in all possible ways *)
 let iso cmp g h =
@@ -368,6 +374,8 @@ let find_forget_point x = sext U.find_forget_point x
 let is_anchor x = sext U.is_anchor x
 let anchors x = sext U.anchors x
 let find_anchor x = sext U.find_anchor x
+
+let is_separator x = sext U.is_separator x
 
 let iter_edges f = sext (U.iter_edges f)
 let iter_edges' f = sext (U.iter_edges' f)
