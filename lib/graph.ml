@@ -140,6 +140,9 @@ let add_edge einfo neighbours g =
 let rem_edge e g =
   { g with edges = MSet.remq e g.edges }
 
+let filter_edges f g =
+  { g with edges = MSet.filter f g.edges }
+
 let subst_edge g e h =
   if Seq.size e.neighbours <> h.arity then failwith "subst_edge: arity mismatch";
   let new_edges =
@@ -237,11 +240,11 @@ let anchors g = MSet.filter (is_anchor g) g.ivertices
 
 let is_hard g = not (is_atomic g) && is_fullprime g && find_anchor g = None
 
-let is_separator g l =
+let is_separator g i j l =
   let cs = components (List.fold_right promote l g) in
   MSet.forall (fun c ->
       let t = touched_sources c in
-      not (ISeq.mem 1 t && ISeq.mem 2 t)) cs
+      not (ISeq.mem i t && ISeq.mem j t)) cs
 
 (* checking isomorphism
    naively for now: just try to match edges in all possible ways *)
@@ -392,6 +395,7 @@ let iter_infos f g =
 
 let add_edge e n (s,g) = let e,g = U.add_edge e n g in e,(s,g)
 let rem_edge e (s,g) = (s,U.rem_edge e g)
+let filter_edges f (s,g) = (s,U.filter_edges f g)
 let subst_edge (s,g) e (_,h) = let g',m = U.subst_edge g e h in (s, g'), m
 let add_ivertex v (s,g) = (s,U.add_ivertex v g)
 let rem_ivertex v (s,g) = (s,U.rem_ivertex v g)
@@ -452,7 +456,7 @@ let draw_on (draw: canvas) ?(iprops=false) (g: #positionned graph) =
     let c = x#circle in
     let fill = x#color in
     draw#path ~fill (Geometry.edge c (npos n));
-    (* draw#circle c; *)
+    if x#get "clique" = Some "true" then draw#circle c;
     draw#text x#pos x#label
   in
   (* Geometry.set_debug draw; *)

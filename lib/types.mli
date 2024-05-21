@@ -31,6 +31,8 @@ type ('a,'b) mapper =
 class type printable =
   object
     method label: string
+    method get: string -> string option
+    method set: string -> string -> unit
     method pp: pp_mode -> formatter -> unit
     method pp_empty: pp_mode -> bool
   end

@@ -14,8 +14,10 @@ module Stack: sig
   val pop: 'a t -> 'a t option
   val replace: 'a t -> 'a -> 'a t
   val push: 'a t -> 'a -> 'a t
+  val push_here: 'a t -> 'a -> 'a t
   val pos: 'a t -> int
   val size: 'a t -> int
+  (* val count: ('a -> bool) -> 'a t -> int *)
 end = struct
   type 'a t = { left: 'a list; here: 'a; right: 'a list }
   let create here = { left=[]; here; right=[] }
@@ -33,10 +35,11 @@ end = struct
     | [],[] -> None
     | left,here::right | here::left,right -> Some { left; here; right }
   let replace x here = { x with here }
-  let push x here  =
-    { x with here; right = x.here::x.right }
+  let push x next  = { x with right = next::x.right }
+  let push_here x here  = { x with here; right = x.here::x.right }
   let pos x = List.length x.left + 1
   let size x = List.length x.left + 1 + List.length x.right
+  (* let count f x = List.length (List.filter f (x.left @ x.here :: x.right)) *)
 end
 
 
@@ -54,6 +57,47 @@ let center_edges s =
   let t = Graph.to_term g in
   Format.asprintf "%a" (Term.pp Full) t
 
+let find_ivertex g l =
+  match MSet.find (fun i -> i#label = l) (Graph.ivertices g) with
+  | None ->
+     Format.printf "%a@." (Graph.pp Full) g;
+     failwith ("missing inner vertex "^l)
+  | Some v -> v     
+
+let is_minimal g x =
+  let g = Graph.promote x g in
+  MSet.forall
+    (fun x -> not (Graph.is_separator g 1 3 [x] || Graph.is_separator g 2 3 [x]))
+    (Graph.ivertices g)
+
+let kind g =
+  if not (Graph.is_hard g) then `Skip "the graph is not hard"
+  else
+    let x = find_ivertex g "x" in
+    let y = find_ivertex g "y" in
+    let z = find_ivertex g "z" in
+    let t = find_ivertex g "t" in
+    if Graph.is_separator g 1 2 [x;z] then `Skip "{x,z} is a separation pair" else
+    if Graph.is_separator g 1 2 [x;t] then `Skip "{x,t} is a separation pair" else
+    if Graph.is_separator g 1 2 [y;z] then `Skip "{y,z} is a separation pair" else
+    if Graph.is_separator g 1 2 [y;t] then `Skip "{y,t} is a separation pair" else
+    let test_seps f g k =
+      if not (Graph.is_separator g 1 2 [x;y]) then f "{x,y}" "separation" else
+      if not (Graph.is_separator g 1 2 [z;t]) then f "{z,t}" "separation" else
+      if not (Graph.width_less_than 3 (List.fold_right Graph.promote [x;y] g)) then f "{x,y}" "forget" else
+      if not (Graph.width_less_than 3 (List.fold_right Graph.promote [z;t] g)) then f "{z,t}" "forget" else
+      k()
+    in
+    let g' = Graph.filter_edges (fun e -> (Graph.einfo e)#get "clique" = Some "true") g in
+    test_seps (fun a b -> `Skip (a^" cannot be a "^b^" pair")) g' (fun () ->
+    if not (is_minimal g x) then `Skip "x is not minimal" else
+    if not (is_minimal g y) then `Skip "y is not minimal" else
+    if not (is_minimal g z) then `Skip "z is not minimal" else
+    if not (is_minimal g t) then `Skip "t is not minimal" else
+    test_seps (fun a b -> `Refine (a^" is not yet a "^b^" pair")) g (fun () ->
+        `Axiom
+    ))
+
 (* initial width/height *)
 let width = 800
 let height = 800
@@ -66,12 +110,12 @@ let file = ref None
 
 let text = center_edges
              "#<pos=0,0>,<pos=500,0> 
-              f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({234}f<pos=400,100;label=z;radius=6>({234}-f | {14}d) | {234}f<pos=400,-100;label=t;radius=6>({14}c | {234}-g) | {14}b) | {13}a)"
+              f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({234}f<pos=400,100;label=z;radius=6>({234}c | {14}-f<clique=true>) | {234}f<pos=400,-100;label=t;radius=6>({14}g<clique=true> | {234}b) | {134}a))"
 let text2 = center_edges
-              "#<pos=0,0>,<pos=500,0> f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({234}f<pos=250,0>({134}f<pos=400,-100;label=t;radius=6>({134}d | {234}-f) | {124}f<pos=400,100;label=z;radius=6>({134}c | {234}g) | {234}e) | {14}a) | {13}b)"
+              "#<pos=0,0>,<pos=500,0> f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({134}a | {234}f<pos=250,0>({134}f<pos=400,-100;label=t;radius=6>({134}-f | {234}d) | {124}f<pos=400,100;label=z;radius=6>({134}e | {234}c) | {234}b)))"
 let hist =
-  let s = Stack.create text2 in
-  let s = Stack.push s text in
+  let s = Stack.create text in
+  let s = Stack.push s text2 in
   History.create s
 
 let _ = GtkMain.Main.init ()
@@ -89,7 +133,7 @@ let term_factory = new GMenu.factory (factory#add_submenu "Term") ~accel_group
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
 let entry = GEdit.entry ~editable:true ~packing:(vbox#pack ~expand:false) ()
-let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:60 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
+let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:80 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
 
 let dialog title action stock stock' filter =
   let dlg = GWindow.file_chooser_dialog
@@ -131,32 +175,36 @@ let display_graph_infos g =
   let pp_graph_infos f =
     Format.fprintf f "Graph %i/%i\n" (Stack.pos s) (Stack.size s);    
     Format.fprintf f "Treewidth: %i\n" (Graph.width g);
-    match MSet.size (Graph.components g) with
-    | 0 -> Format.fprintf f "Empty"
+    (match MSet.size (Graph.components g) with
+    | 0 -> Format.fprintf f "Empty\n"
     | 1 -> 
        Format.fprintf f
          (if Graph.is_full g then
-            if Graph.is_atomic g then "Atomic"
-            else if Graph.is_hard g then  "Hard"
-            else "Full prime"
-          else "Prime")
+            if Graph.is_atomic g then "Atomic\n"
+            else if Graph.is_hard g then  "Hard\n"
+            else "Full prime\n"
+          else "Prime\n")
     | n ->
        if Graph.is_full g then Format.fprintf f "Full, ";
-       Format.fprintf f "%i components" n
+       Format.fprintf f "%i components\n" n);
+    match kind g with
+    | `Skip msg -> Format.fprintf f "Can be skipped: %s\n" msg
+    | `Refine msg -> Format.fprintf f "Should be refined: %s\n" msg
+    | `Axiom -> Format.fprintf f "Axiom? \n"
   in
   Format.kasprintf label#set_label "%t" pp_graph_infos
 
 let set_graph g =
   graph := g;
   redraw();
+  display_graph_infos g;
   if (match current_term (fun _ -> ()) with
       | Some t -> not (Graph.iso Info.same_label g (Graph.of_term t))
       | None -> true)
   then
     let t = Graph.to_term g in
     assert (Graph.iso Info.same_label g (Graph.of_term t));
-    Format.kasprintf entry#set_text "%a" (Term.pp Sparse) t;
-    display_graph_infos g
+    Format.kasprintf entry#set_text "%a" (Term.pp Sparse) t
 
 let undo _ =
   match History.undo hist with
@@ -177,8 +225,8 @@ let text_changed _ =
   match current_term (fun _ -> label#set_label "Parsing error\n") with
   | Some r ->
      let g = Graph.of_term r in
-     display_graph_infos g;
      if not (Graph.iso Info.same_label g !graph) then (
+       display_graph_infos g;
        Place.sources_on_circle g;
        (* Place.graphviz g; *)
        graph := g;
@@ -318,13 +366,27 @@ let set_stack stack =
 let split() =
   match catch() with
   | `E e ->
-     let l = Info.escape (Graph.einfo e)#label in
-     let s = History.present hist in
-     let s = Stack.replace s (Format.kasprintf (subst e) "{31}%s1|{32}%s2" l l) in
-     let s = Stack.push s (Format.kasprintf (subst e) "{21}%s1|{23}%s3" l l) in
-     let s = Stack.push s (Format.kasprintf (subst e) "{12}%s2|{13}%s3" l l) in
-     let s = Stack.push s (Format.kasprintf (subst e) "*(%s1,%s2,%s3)" l l l) in
-     set_stack s
+     let x = Graph.einfo e in
+     if x#get "clique" = Some "true"
+     then print_endline "this edge was already split"
+     else (
+       x#set "clique" "true";
+       match Seq.size (Graph.neighbours e) with
+       | 3 -> 
+          checkpoint();
+          let l = Info.escape x#label in
+          let s = History.present hist in
+          let s = Stack.push s (Format.kasprintf (subst e) "{31}%s|{32}%s" l l) in
+          let s = Stack.push s (Format.kasprintf (subst e) "{21}%s|{23}%s" l l) in
+          let s = Stack.push s (Format.kasprintf (subst e) "{12}%s|{13}%s" l l) in
+          let s = Stack.push s (Format.kasprintf (subst e) "*(%s<clique=true>,%s<clique=true>,%s<clique=true>)" l l l) in
+          set_stack s 
+       | 2 -> 
+          checkpoint();
+          let s = History.present hist in
+          let s = Stack.push_here s (subst e "#2 0") in
+          set_stack s 
+       | _ -> print_endline "may only split edges of arity two and three")
   | `V _ -> print_endline "cannot split a vertex"
   | `N -> ()  
 
@@ -338,33 +400,8 @@ let right() =
   | Some s -> set_stack s
   | None -> print_endline "already on rightmost case"
 
-
-let find_ivertex l =
-  match MSet.find (fun i -> i#label = l) (Graph.ivertices !graph) with
-  | None -> failwith ("missing inner vertex "^l)
-  | Some v -> v
-
-let mayskip() =
-  if not (Graph.is_hard !graph) then
-    (print_endline "skipping this case since the graph is not hard"; true)
-  else
-    let skip_sep msg l =
-      if Graph.is_separator !graph l then
-        (print_endline ("skipping this since "^msg^" is a separation pair"); true)
-      else false
-    in
-    let x = find_ivertex "x" in
-    let y = find_ivertex "y" in
-    let z = find_ivertex "z" in
-    let t = find_ivertex "t" in
-    skip_sep "xz" [x;z] ||
-    skip_sep "xt" [x;t] ||
-    skip_sep "yz" [y;z] ||
-    skip_sep "yt" [y;t]
-     
-
 let discard force =
-  if force || mayskip() then
+  if force || match kind !graph with `Skip _ -> true | _ -> false then
     match Stack.pop (History.present hist) with
     | Some s -> set_stack s
     | None -> print_endline "congrats: this was the last case!"
@@ -388,8 +425,8 @@ f:     forget source
 p:     promote inner vertex as source
 d/r:   remove element
 e:     insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- to name the edge)
-s:     split ternary edge, generating four subcases
-k:     discard current case (when not hard-TW3)
+s:     split edge, generating subcases
+k:     discard current case (when justification is clear)
 K:     discard current case (whatever the situation)
 D:     duplicate current case
 h:     print this help message"

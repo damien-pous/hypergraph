@@ -52,7 +52,8 @@ class virtual holder_ =
     method virtual private has: string -> bool
     method virtual private rem: string -> unit
     method virtual private add: string -> string -> unit
-    method virtual private get: string -> string option
+    method virtual get: string -> string option
+    method virtual set: string -> string -> unit
   end
 
 class holder (l: kvl) =
@@ -62,7 +63,8 @@ class holder (l: kvl) =
     method private has k = List.mem_assoc k kvl 
     method private rem k = kvl <- List.remove_assoc k kvl 
     method private add k v = self#rem k; kvl <- (k,v)::kvl 
-    method private get k = List.assoc_opt k kvl
+    method get k = List.assoc_opt k kvl
+    method set k v = kvl <- (k,v)::kvl
   end
 
 class virtual printer =

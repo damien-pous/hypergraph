@@ -38,7 +38,7 @@ val is_anchor: 'a graph -> 'a -> bool
 val find_anchor: 'a graph -> 'a option
 val anchors: 'a graph -> 'a mset
 
-val is_separator: 'a graph -> 'a list -> bool
+val is_separator: 'a graph -> int -> int -> 'a list -> bool
 
 val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a graph -> unit
 val iter_edges': ('a edge -> unit) -> 'a graph -> unit
@@ -54,11 +54,14 @@ val rem_edge: 'a edge -> 'a graph -> 'a graph
 val rem_ivertex: 'a -> 'a graph -> 'a graph
 val rem_source: int -> 'a graph -> 'a graph
 val rem_vertex: 'a vertex -> 'a graph -> 'a graph
+val filter_edges: ('a edge -> bool) -> 'a graph -> 'a graph
 
 val add_edge: 'a -> 'a vertex seq -> 'a graph -> 'a edge * 'a graph
 val add_ivertex: 'a -> 'a graph -> 'a graph
 
 val subst_edge: 'a graph -> 'a edge -> 'a graph -> 'a graph * 'a edge mset
+
+
 
 (* isomorphim check, using the given function to compare edge infos *)
 val iso: ('a -> 'a -> bool) -> 'a graph -> 'a graph -> bool
@@ -100,7 +103,7 @@ module U: sig
   val find_anchor: 'a ugraph -> 'a option
   val anchors: 'a ugraph -> 'a mset
 
-  val is_separator: 'a ugraph -> 'a list -> bool
+  val is_separator: 'a ugraph -> int -> int -> 'a list -> bool
  
   val iter_edges: ('a -> 'a vertex seq -> unit) -> 'a ugraph -> unit
   val iter_edges': ('a edge -> unit) -> 'a ugraph -> unit
@@ -111,11 +114,12 @@ module U: sig
   val rem_ivertex: 'a -> 'a ugraph -> 'a ugraph
   val rem_source: int -> 'a ugraph -> 'a ugraph
   val rem_vertex: 'a vertex -> 'a ugraph -> 'a ugraph
+  val filter_edges: ('a edge -> bool) -> 'a ugraph -> 'a ugraph
 
   val subst_edge: 'a ugraph -> 'a edge -> 'a ugraph -> 'a ugraph * 'a edge mset
   
   val add_edge: 'a -> 'a vertex seq -> 'a ugraph -> 'a edge * 'a ugraph
   val add_ivertex: 'a -> 'a ugraph -> 'a ugraph    
-  
+
   val iso: ('a -> 'a -> bool) -> 'a ugraph -> 'a ugraph -> bool
 end
