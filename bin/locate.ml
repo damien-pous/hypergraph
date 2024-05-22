@@ -109,10 +109,9 @@ let mode = ref `Normal
 let file = ref None
 
 let text = center_edges
-             "#<pos=0,0>,<pos=500,0> 
-              f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({234}f<pos=400,100;label=z;radius=6>({234}c | {14}-f<clique=true>) | {234}f<pos=400,-100;label=t;radius=6>({14}g<clique=true> | {234}b) | {134}a))"
+             "#<pos=0,0>,<pos=400,0>               f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({234}f<pos=300,100;label=z;radius=6>({234}c | {14}-f<clique=true>) | {234}f<pos=300,-100;label=t;radius=6>({14}g<clique=true> | {234}b) | {134}a<radius=25>))"
 let text2 = center_edges
-              "#<pos=0,0>,<pos=500,0> f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({134}a | {234}f<pos=250,0>({134}f<pos=400,-100;label=t;radius=6>({134}-f | {234}d) | {124}f<pos=400,100;label=z;radius=6>({134}e | {234}c) | {234}b)))"
+              "#<pos=0,0>,<pos=400,0> f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({134}a<radius=22> | {234}f<pos=200,0>({134}f<pos=300,-100;label=t;radius=6>({134}-f<radius=22> | {234}d) | {124}f<pos=300,100;label=z;radius=6>({134}e<radius=22> | {234}c) | {234}b<radius=22>)))"
 let hist =
   let s = Stack.create text in
   let s = Stack.push s text2 in
