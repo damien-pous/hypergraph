@@ -19,8 +19,8 @@
     Gg.Box2.v (p2_of_strings x y) (p2_of_strings x' y')
 }
 
-let lstart = ['a'-'e' 'g'-'k' 'm'-'q' 't'-'z' 'A'-'Z' '1'-'9']
-let letter = ['a'-'z' 'A'-'Z' '0'-'9' '_']
+let lstart = ['a'-'e' 'g'-'k' 'm'-'q' 't'-'z' 'A'-'Z' '1'-'9' '!' '?']
+let letter = ['a'-'z' 'A'-'Z' '0'-'9' '_' '-' '!' '?']
 let key = letter+
 let word = letter*
 let label = lstart word

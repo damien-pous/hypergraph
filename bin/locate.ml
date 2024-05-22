@@ -88,7 +88,7 @@ let kind g =
       if not (Graph.width_less_than 3 (List.fold_right Graph.promote [z;t] g)) then f "{z,t}" "forget" else
       k()
     in
-    let g' = Graph.filter_edges (fun e -> (Graph.einfo e)#get "clique" = Some "true") g in
+    let g' = Graph.filter_edges (fun e -> (Graph.einfo e)#label <> "?") g in
     test_seps (fun a b -> `Skip (a^" cannot be a "^b^" pair")) g' (fun () ->
     if not (is_minimal g x) then `Skip "x is not minimal" else
     if not (is_minimal g y) then `Skip "y is not minimal" else
@@ -97,6 +97,31 @@ let kind g =
     test_seps (fun a b -> `Refine (a^" is not yet a "^b^" pair")) g (fun () ->
         `Axiom
     ))
+
+let graph1 = center_edges
+             "#<pos=0,0>,<pos=400,0>
+              f<pos=100,100;label=x;radius=6>
+              f<pos=100,-100;label=y;radius=6>
+              f<pos=300,100;label=z;radius=6>
+              f<pos=300,-100;label=t;radius=6>
+              ( {134}?<color=yellow;radius=25>
+              | {345}?<color=red>
+              | {346}?<color=orange>
+              | {52}-<color=violet>
+              | {62}-<color=blue> )"
+let graph2 = center_edges
+             "#<pos=0,0>,<pos=400,0>
+              f<pos=100,100;label=x;radius=6>
+              f<pos=100,-100;label=y;radius=6>
+              f<pos=300,100;label=z;radius=6>
+              f<pos=300,-100;label=t;radius=6>
+              f<pos=200,0>
+              ( {134}?<color=green;radius=25>
+              | {347}?<color=yellow;radius=25>
+              | {357}?<color=red>
+              | {467}?<color=orange>
+              | {572}?<color=violet;radius=25>
+              | {672}?<color=blue;radius=25> )"
 
 (* initial width/height *)
 let width = 800
@@ -107,14 +132,9 @@ let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
 let file = ref None
-
-let text = center_edges
-             "#<pos=0,0>,<pos=400,0>               f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({234}f<pos=300,100;label=z;radius=6>({234}c | {14}-f<clique=true>) | {234}f<pos=300,-100;label=t;radius=6>({14}g<clique=true> | {234}b) | {134}a<radius=25>))"
-let text2 = center_edges
-              "#<pos=0,0>,<pos=400,0> f<pos=100,100;label=x;radius=6>(f<pos=100,-100;label=y;radius=6>({134}a<radius=22> | {234}f<pos=200,0>({134}f<pos=300,-100;label=t;radius=6>({134}-f<radius=22> | {234}d) | {124}f<pos=300,100;label=z;radius=6>({134}e<radius=22> | {234}c) | {234}b<radius=22>)))"
 let hist =
-  let s = Stack.create text in
-  let s = Stack.push s text2 in
+  let s = Stack.create graph1 in
+  let s = Stack.push s graph2 in
   History.create s
 
 let _ = GtkMain.Main.init ()
@@ -366,23 +386,24 @@ let split() =
   match catch() with
   | `E e ->
      let x = Graph.einfo e in
-     if x#get "clique" = Some "true"
-     then print_endline "this edge was already split"
+     if x#label <> "?"
+     then print_endline "this edge cannot be split"
      else (
-       x#set "clique" "true";
        match Seq.size (Graph.neighbours e) with
        | 3 -> 
-          checkpoint();
-          let l = Info.escape x#label in
+          let c = match x#get "color" with Some c -> c | None -> "gray" in
+          let r = match x#get "radius" with Some r -> r | None -> string_of_float (Constants.eradius 3) in
           let s = History.present hist in
-          let s = Stack.push s (Format.kasprintf (subst e) "{31}%s|{32}%s" l l) in
-          let s = Stack.push s (Format.kasprintf (subst e) "{21}%s|{23}%s" l l) in
-          let s = Stack.push s (Format.kasprintf (subst e) "{12}%s|{13}%s" l l) in
-          let s = Stack.push s (Format.kasprintf (subst e) "*(%s<clique=true>,%s<clique=true>,%s<clique=true>)" l l l) in
+          let s = Stack.push s (Format.kasprintf (subst e) "{31}?<color=%s>|{32}?<color=%s>" c c) in
+          let s = Stack.push s (Format.kasprintf (subst e) "{21}?<color=%s>|{23}?<color=%s>" c c) in
+          let s = Stack.push s (Format.kasprintf (subst e) "{12}?<color=%s>|{13}?<color=%s>" c c) in
+          let s = Stack.push s (Format.kasprintf (subst e) "*(-<color=%s>,-<color=%s>,-<color=%s>)" c c c) in
+          let s = Stack.replace s (Format.kasprintf (subst e) "#3 -<color=%s;radius=%s>" c r) in
           set_stack s 
        | 2 -> 
-          checkpoint();
+          let c = match x#get "color" with Some c -> c | None -> "gray" in
           let s = History.present hist in
+          let s = Stack.replace s (Format.kasprintf (subst e) "#2 -<color=%s>" c) in
           let s = Stack.push_here s (subst e "#2 0") in
           set_stack s 
        | _ -> print_endline "may only split edges of arity two and three")
@@ -483,6 +504,6 @@ let _ = da#event#connect #key_press ~callback:key_press
 let _ = entry#connect#changed ~callback:text_changed
 let _ = window#connect#destroy ~callback:Main.quit
 let _ = window#add_accel_group accel_group
-let _ = entry#set_text text; History.clear hist
+let _ = entry#set_text graph1; History.clear hist
 let _ = window#show ()
 let _ = Main.main ()

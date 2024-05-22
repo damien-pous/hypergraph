@@ -34,7 +34,7 @@ let same_label_kvl x y = get_label x = get_label y
 let pp_kvl f l =
   if l<>[] then
     Format.fprintf f "<%a>"
-      (pp_print_list ";" (fun f (k,v)-> Format.fprintf f "%s=%s" k v))
+      (pp_print_list ";" (fun f (k,v)-> Format.fprintf f "%s='%s'" k v))
       l
 
 let forbidden s =
@@ -64,7 +64,7 @@ class holder (l: kvl) =
     method private rem k = kvl <- List.remove_assoc k kvl 
     method private add k v = self#rem k; kvl <- (k,v)::kvl 
     method get k = List.assoc_opt k kvl
-    method set k v = kvl <- (k,v)::kvl
+    method set k v = kvl <- (k,v)::List.remove_assoc k kvl
   end
 
 class virtual printer =

@@ -28,13 +28,11 @@
 # sanity
 - more checks
 
-
 # recent
 - ternary edge/shape specification (exclusion of specific boudins)
-- find necessarily connecting binary edges
-- add triangle minor case
-- find checkpoints (non-minimal cases in localisation)
-- draw separation pairs (+ find them)
+- draw separation pairs
 - find subcases (subgraphs)
 - export/use connectivity api ?
 - store neighbourhood / connectivity / key parameters
+- purely functionnal datatype for infos ?
+- recursive placement
