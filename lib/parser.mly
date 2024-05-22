@@ -1,4 +1,4 @@
-%token LPAR RPAR LT GT COMMA SEMI STAR SERIES DOT QUOTE HAT SHARP
+%token LPAR RPAR LT GT COMMA SEMI STAR SERIES DOT CNV HAT SHARP
 %token PAR NIL LFT FGT SIM EOF
 %token <Types.label> LABEL
 %token <Types.perm> PRM
@@ -8,8 +8,7 @@
 
 %left PAR
 %left DOT
-%nonassoc LFT FGT PRM INJ
-%right QUOTE
+%nonassoc LFT FGT PRM INJ CNV
 
 %type <Info.kvl Term.t> sterm
 %start sterm
@@ -43,9 +42,9 @@ term:
 | p=PRM; t=term { prm p t }
 | label=LABEL; x=kvl { edg (Info.kv "label" label :: x) }
 (* syntactic sugar *)
+| CNV; t=term { cnv t }
 | i=INJ; t=term { inj i t }
 | u=term; DOT; x=kvl; v=term { dot x u v }
-| u=term; QUOTE { cnv u }
 | label=LABEL; HAT { dot [] (edg [Info.kv "label" label]) (edg [Info.kv "label" (label^"^")]) }
 | STAR; x=kvl; LPAR; ts=separated_list(COMMA, term); RPAR { str x ts }
 | SERIES; LPAR; ts=separated_list(COMMA, term); RPAR { ser ts }

@@ -19,7 +19,7 @@
     Gg.Box2.v (p2_of_strings x y) (p2_of_strings x' y')
 }
 
-let lstart = ['a'-'e' 'g'-'k' 'm'-'r' 't'-'z' ]
+let lstart = ['a'-'e' 'g'-'k' 'm'-'q' 't'-'z' 'A'-'Z' '1'-'9']
 let letter = ['a'-'z' 'A'-'Z' '0'-'9' '_']
 let key = letter+
 let word = letter*
@@ -37,6 +37,7 @@ let pos = float ',' float
 
 let blank = [ ' ' '\r' '\t' '\n' ]
 let skip = [^ ';']* ';'
+let noquote = [^ '"']
 
 rule token = parse
   | blank                                  { token lexbuf }
@@ -45,6 +46,7 @@ rule token = parse
   | 'f'                                    { FGT }
   | 'l'                                    { LFT }
   | 's'                                    { SERIES }
+  | 'r'                                    { CNV }
   | '|'                                    { PAR }
   | '('                                    { LPAR }
   | ')'                                    { RPAR }
@@ -52,7 +54,6 @@ rule token = parse
   | '>'                                    { GT }
   | '.'                                    { DOT }
   | ','                                    { COMMA }
-  | '''                                    { QUOTE }
   | '^'                                    { HAT }
   | ';'                                    { SEMI }
   | '*'                                    { STAR }
@@ -77,6 +78,8 @@ rule token = parse
   | "radius=" (float as x)                 { keyval "radius" x }
   | "scale=" (float as x)                  { keyval "scale" x }
   | (key as k) '=' (word as v)             { keyval k v }
+  | (key as k) "=\"" ([^'"']* as v) '"'    { keyval k v }
+  | (key as k) "='" ([^''']* as v) '''     { keyval k v }
   | eof                                    { EOF }
   | _ as c                                 { Printf.kprintf failwith "lexing error near `%c'" c }
 

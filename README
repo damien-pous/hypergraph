@@ -22,6 +22,7 @@ fu           forget u
 lu           lift u
 pu           permute p u
 
+ru	     swap last two sources of u
 iu           u located according to injection i
 s(u1,...,uk) series composition (without the forget)
 *(u1,...,uk) star operation
@@ -33,8 +34,8 @@ u'           swap last two sources
 #<key=val;...><key=val;...>... u  set arity and source decorations
 
 ## labels (a)
-s             when s does not contain f/l/s, which are reserved for forgets/lifts/series
--s            when s does, or when s is empty
+s             when s does not start with f/l/s/r, which are reserved for forgets/lifts/series/swaplast
+-s            when s does so, or when s is empty
 
 ## permutations (p)
 [231]         explicit permutation of size <=9

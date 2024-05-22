@@ -30,7 +30,6 @@
 
 
 # recent
-- r for converse
 - ternary edge/shape specification (exclusion of specific boudins)
 - find necessarily connecting binary edges
 - add triangle minor case

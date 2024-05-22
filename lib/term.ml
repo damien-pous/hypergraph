@@ -115,15 +115,15 @@ let map f =
     | Cnv u      -> Cnv(map u)
   in map
 
-type l = BOT | PAR | DOT | PRF | CNV 
+type l = BOT | PAR | DOT | PRF 
 let head = function
   | Par(_,_)   -> PAR
   | Fgt(_,_)
   | Lft _   
   | Prm(_,_)
+  | Cnv _
   | Inj(_,_,_) -> PRF
   | Dot(_,_,_) -> DOT
-  | Cnv _      -> CNV
   | Ser _   
   | Str(_,_)
   | Nil _
@@ -142,11 +142,11 @@ let pp mode =
     | Fgt(x,u)   -> Format.fprintf f (paren "f%a%a") ppx x pp u
     | Lft u      -> Format.fprintf f (paren "l%a") pp u
     | Prm(p,u)   -> Format.fprintf f (paren "%a%a") Perm.pp p pp u
+    | Cnv u      -> Format.fprintf f (paren "r%a") pp u
     | Inj(_,i,u) -> Format.fprintf f (paren "%a%a") Inj.pp i pp u
     | Ser l      -> Format.fprintf f "s(%a)" (pp_print_list "," pp) l
     | Str(x,l)   -> Format.fprintf f "*%a(%a)" ppx x (pp_print_list "," pp) l
     | Dot(x,u,v) -> Format.fprintf f (paren "%a.%a%a") pp u ppx x pp v
-    | Cnv u      -> Format.fprintf f (paren "%a'") pp u
 in pp BOT
 
 end
