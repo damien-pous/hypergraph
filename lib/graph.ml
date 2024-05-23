@@ -428,7 +428,7 @@ let bbox (g: #positionned graph) =
       let d = i#radius *. 2. in 
       b := Gg.Box2.union !b (Gg.Box2.v_mid i#pos (Gg.Size2.v d d));
     ) g;
-  !b
+  if Gg.Box2.is_empty !b then Gg.Box2.unit else !b
 
 let draw_on (draw: canvas) ?(iprops=false) (g: #positionned graph) =
   let iprops = if iprops && is_fullprime g then Some (width g) else None in
