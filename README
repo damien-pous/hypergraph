@@ -9,7 +9,7 @@ need graphviz to place graphs, then
 opam install dune cairo2-gtk vg 
 make
 
-maybe [opam install otfm] ?
+maybe [opam install otfm brr lwt js_of_ocaml] ?
 
 
 # syntax
