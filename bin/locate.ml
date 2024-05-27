@@ -152,7 +152,7 @@ let term_factory = new GMenu.factory (factory#add_submenu "Term") ~accel_group
 let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
 let arena = GArena.create ~width ~height ~window da canvas ()
 let entry = GEdit.entry ~editable:true ~packing:(vbox#pack ~expand:false) ()
-let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:80 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
+let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:100 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
 
 let dialog title action stock stock' filter =
   let dlg = GWindow.file_chooser_dialog
