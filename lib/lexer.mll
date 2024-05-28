@@ -57,7 +57,6 @@ rule token = parse
   | '^'                                    { HAT }
   | ';'                                    { SEMI }
   | '*'                                    { STAR }
-  | '~'                                    { SIM }
   (* cycles&permutations: at least two elements, if comma then arbitrary ints, otherwise digits *)
   | '(' (ndigit ndigit+ as s) ')'          { PRM (Perm.of_cycle (diglist_of_string s)) }
   | '(' (nint as x) ((',' nint)+ as q) ')' { PRM (Perm.of_cycle (numlist_of_string x q)) }

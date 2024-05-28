@@ -1,10 +1,4 @@
 (executable
- (public_name hg-gui)
- (name gui)
- (modules gui)
- (libraries hypergraphs hypergraphs_gtk hypergraphs_place hypergraphs_cairo))
-
-(executable
  (public_name hg-locate)
  (name locate)
  (modules locate)

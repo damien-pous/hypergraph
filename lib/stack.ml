@@ -30,8 +30,12 @@ let move_right x =
   | v::right -> { left=v::x.left; right}
 
 let pop x =
-  not_empty x "pop";
-  { x with right=List.tl x.right }
+  not_empty x "pop";  
+  match x.right with
+  | _::((_::_) as right) -> { x with right }
+  | _ -> match x.left with
+         | [] -> of_list []
+         | v::left -> {left; right=[v]}
   
 let replace x v =
   not_empty x "replace";  

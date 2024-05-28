@@ -7,12 +7,13 @@ let check f =
 
 let place f =
   let l = File.read f in
-  let t = File.last l in
-  let g = Graph.of_term t in
-  let _ = Place.sources_on_circle g in
-  let _ = Place.graphviz g in
-  File.write f (File.append l t);
-  File.export_term f t
+  let l = List.map (fun t ->
+              let g = Graph.of_term t in
+              let _ = Place.sources_on_circle g in
+              let _ = Place.graphviz g in
+              Graph.to_term g) l in  
+  File.write f l;
+  File.export f l
 
 let export f = File.export f (File.read f)
 

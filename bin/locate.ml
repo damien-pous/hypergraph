@@ -10,14 +10,25 @@ let term_of_string s =
   let t = Parser.sterm Lexer.token l in
   Term.map Info.kvl_to_positionned t
 
+let string_of_term =
+  Format.asprintf "%a" (Term.pp Full) 
+
 let graph_of_string s =
   Graph.of_term (term_of_string s)
 
-let center_edges s =
-  let g = graph_of_string s in
-  Graph.iter_edges' (Place.center_edge g) g;
-  let t = Graph.to_term g in
-  Format.asprintf "%a" (Term.pp Full) t
+let place_graph g =
+  Place.sources_on_circle g;
+  Place.graphviz g
+
+let place_term t =
+  let g = Graph.of_term t in
+  place_graph g
+
+(* let center_edges s = *)
+(*   let g = graph_of_string s in *)
+(*   Graph.iter_edges' (Place.center_edge g) g; *)
+(*   let t = Graph.to_term g in *)
+(*   Format.asprintf "%a" (Term.pp Full) t *)
 
 let find_ivertex g l =
   match MSet.find (fun i -> i#label = l) (Graph.ivertices g) with
@@ -60,59 +71,6 @@ let kind g =
         `Axiom
     ))
 
-let init_stack =
-  Stack.of_list [
-      center_edges
-        "#<pos=0,0>,<pos=400,0>
-         f<pos=100,100;label=x;radius=6>
-         f<pos=100,-100;label=y;radius=6>
-         f<pos=300,100;label=z;radius=6>
-         f<pos=300,-100;label=t;radius=6>
-         ( {134}?<color=yellow;radius=25>
-         | {345}?<color=red;split=s3>
-         | {346}?<color=orange;split=s3>
-         | {52}-<color=violet>
-         | {62}-<color=blue> )";
-      (* center_edges *)
-      (*   "#<pos=0,0>,<pos=400,0> *)
-      (*    f<pos=100,100;label=x;radius=6> *)
-      (*    f<pos=100,-100;label=y;radius=6> *)
-      (*    f<pos=300,100;label=z;radius=6> *)
-      (*    f<pos=300,-100;label=t;radius=6> *)
-      (*    f<pos=200,0> *)
-      (*    ( {134}?<color=green;radius=25;split=s1> *)
-      (*    | {347}?<color=yellow;radius=25;split=s2> *)
-      (*    | {357}?<color=red;split=s1> *)
-      (*    | {467}?<color=orange;split=s2> *)
-      (*    | {572}?<color=violet;radius=25;split=s1> *)
-      (*    | {672}?<color=blue;radius=25;split=s3> )"; *)
-      center_edges
-        "#<pos=0,0>,<pos=400,0>
-         f<pos=100,100;label=x;radius=6>
-         f<pos=100,-100;label=y;radius=6>
-         f<pos=300,100;label=z;radius=6>
-         f<pos=300,-100;label=t;radius=6>
-         f<pos=200,0>
-         ( {134}?<color=green;radius=25;split=s1>
-         | {347}?<color=yellow;radius=25;split=s>
-         | {357}?<color=red;split=s1>
-         | {467}?<color=orange;split=s1>
-         | {572}?<color=violet;radius=25;split=1>
-         | {672}?<color=blue;radius=25;split=1> )";
-      center_edges
-        "#<pos=0,0>,<pos=400,0>
-         f<pos=100,100;label=x;radius=6>
-         f<pos=100,-100;label=y;radius=6>
-         f<pos=300,100;label=z;radius=6>
-         f<pos=300,-100;label=t;radius=6>
-         f<pos=200,0>
-         ( {134}?<color=green;radius=25;split=s1>
-         | {357}?<color=red;split=s2>
-         | {467}?<color=orange;split=s2>
-         | {572}?<color=violet;radius=25;split=s3>
-         | {672}?<color=blue;radius=25;split=s3> )";
-    ]
-
 (* initial window width/height *)
 let width = 800
 let height = 800
@@ -121,11 +79,15 @@ let canvas = new Picture.basic_canvas
 let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
-let file = ref None
-let hist = History.create init_stack
+let file = ref
+             (match Sys.argv with
+              | [|_|] -> "default"
+              | [|_;file|] when File.exists file -> file
+              | _ -> Format.eprintf "usage: locate [file]\n"; exit 1)
+let hist = History.create (Stack.of_list[])
 
 let _ = GtkMain.Main.init ()
-let window = GWindow.window ~title:"HG" ()
+let window = GWindow.window ~title:!file ()
 let vbox = GPack.vbox ~homogeneous:false ~packing:window#add ()
 
 let menubar = GMenu.menu_bar ~packing:vbox#pack ()
@@ -158,7 +120,7 @@ let dialog title action stock stock' filter =
     | Some f ->
        let f = Filename.chop_extension f in
        window#set_title (Filename.basename f);
-       file := Some f;
+       file := f;
        k f
     | None -> ()
   ); dlg#misc#hide()
@@ -197,10 +159,10 @@ let display_graph_infos g =
   in
   Format.kasprintf label#set_label "%t" pp_graph_infos
 
-let set_graph g =
+let set_graph ?rebox g =
   (* print_endline "set_graph"; *)
   graph := g;
-  redraw();
+  redraw ?rebox ();
   display_graph_infos g;
   if (match term_of_string entry#text with
       | t -> not (Graph.iso Info.same_label g (Graph.of_term t))
@@ -233,8 +195,7 @@ let text_changed _ =
      let g = Graph.of_term r in
      if not (Graph.iso Info.same_label g !graph) then (
        (* print_endline "text_changed.really"; *)
-       Place.sources_on_circle g;
-       Place.graphviz g;
+       place_graph g;
        graph := g;
        active := `N;
        redraw ~rebox:true ();
@@ -246,44 +207,35 @@ let text_changed _ =
   | exception Parser.Error -> label#set_label "Parsing error"
   | exception e -> label#set_label (Printexc.to_string e)
 
+let set_stack ?rebox stack =
+  (* print_endline "set_stack"; *)
+  History.save ~cmp:Stack.same hist stack;
+  set_graph ?rebox (graph_of_string (Stack.current stack))
+
+let load_from file =
+  let l = File.read file in
+  List.iter place_term l;
+  let s = Stack.of_list (List.map string_of_term l) in
+  set_stack ~rebox:true s;
+  checkpoint();
+  History.clear hist  
+
+let save_to file =
+  let s = Stack.to_list (History.present hist) in
+  let s = List.map term_of_string s in
+  File.write file s;
+  File.export file s
+
 let load =
   dialog "Open graph file" `OPEN `OPEN `OPEN 
-    (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ())
-    (fun file ->      
-      let l = File.read file in
-      Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (File.first l);
-      set_graph (Graph.of_term (File.last l));
-      checkpoint();
-      History.clear hist)
+    (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ()) load_from
 
-let save_to f =
-  match term_of_string entry#text with
-  | t -> 
-     let l =
-       if File.exists f then (
-         let old = File.read f in
-         if not (File.compatible old t) then
-           failwith ("current graph is incompatible with the one in "^f);
-         old
-       ) else File.single t
-     in
-     let t' = Graph.to_term !graph in
-     let l = File.append l t' in
-     File.write f l;
-     File.export_term f t'
-  | exception _ -> failwith "need a valid term to save"
+let save() =
+  save_to !file
 
-let save =
-  let dlg =
-    dialog "Save graph to"
-      `SAVE `SAVE `SAVE 
-      (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ())
-  in
-  fun () ->
-  match !file with
-  | Some file -> save_to file
-  | None -> dlg save_to ()
-
+let save_as =
+  dialog "Save graphs as" `SAVE `SAVE `SAVE 
+    (GFile.filter ~name: "HG file" ~patterns:["*.hg"] ()) save_to
 
 let catch() = Graph.find (Geometry.inside arena#pointer) !graph
 
@@ -368,11 +320,6 @@ let subst e s =
   Graph.iter_ivertices (fun i -> i#move (Graph.einfo e)#pos) h;
   MSet.iter (Place.center_edge g) es;
   Format.asprintf "%a" (Term.pp Full) (Graph.to_term g)
-
-let set_stack stack =
-  (* print_endline "set_stack"; *)
-  History.save ~cmp:Stack.same hist stack;
-  set_graph (graph_of_string (Stack.current stack))
 
 let split ~opt =
   match catch() with
@@ -489,6 +436,7 @@ let on_term f () =
 
 let _ = file_factory#add_item "Open" ~key:GdkKeysyms._O ~callback:load
 let _ = file_factory#add_item "Save" ~key:GdkKeysyms._S ~callback:save
+let _ = file_factory#add_item "Save as" ~key:GdkKeysyms._E ~callback:save_as
 let _ = file_factory#add_item "Quit" ~key:GdkKeysyms._Q ~callback:Main.quit
 let _ = edit_factory#add_item "Undo" ~key:GdkKeysyms._Z ~callback:undo
 let _ = edit_factory#add_item "Redo" ~key:GdkKeysyms._R ~callback:redo
@@ -507,7 +455,6 @@ let _ = da#event#connect #key_press ~callback:key_press
 let _ = entry#connect#changed ~callback:text_changed
 let _ = window#connect#destroy ~callback:Main.quit
 let _ = window#add_accel_group accel_group
-let _ = set_stack init_stack
-let _ = arena#ensure (Graph.bbox !graph)
+let _ = load_from !file
 let _ = window#show ()
 let _ = Main.main ()

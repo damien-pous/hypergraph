@@ -1,5 +1,3 @@
-MAIN=locate
-
 all:: test run
 
 build::
@@ -12,7 +10,7 @@ test::
 run::
 	dune build
 	dune runtest
-	dune exec ./bin/$(MAIN).exe
+	dune exec ./bin/locate.exe axioms
 
 www::
 	dune runtest

@@ -1,5 +1,5 @@
 %token LPAR RPAR LT GT COMMA SEMI STAR SERIES DOT CNV HAT SHARP
-%token PAR NIL LFT FGT SIM EOF
+%token PAR NIL LFT FGT EOF
 %token <Types.label> LABEL
 %token <Types.perm> PRM
 %token <Types.inj> INJ
@@ -62,7 +62,7 @@ sterm:
 | t=sterm_; EOF { t }
 
 file:
-| l=separated_nonempty_list(SIM, sterm_); EOF { l }
+| l=separated_nonempty_list(SEMI, sterm_); EOF { l }
 
 (* dot files *)
 dotlines:
