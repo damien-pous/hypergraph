@@ -7,7 +7,8 @@ open GMain
 
 module Stack: sig
   type 'a t
-  val create: 'a -> 'a t
+  val of_list: 'a list -> 'a t
+  (* val create: 'a -> 'a t *)
   val current: 'a t -> 'a
   val left: 'a t -> 'a t option
   val right: 'a t -> 'a t option
@@ -20,7 +21,10 @@ module Stack: sig
   (* val count: ('a -> bool) -> 'a t -> int *)
 end = struct
   type 'a t = { left: 'a list; here: 'a; right: 'a list }
-  let create here = { left=[]; here; right=[] }
+  let of_list = function
+    | here::right -> { left=[]; here; right }
+    | [] -> failwith "cannot create an empty stack"
+  (* let create x = of_list [x] *)
   let current x = x.here
   let left x =
     match x.left with
@@ -41,7 +45,6 @@ end = struct
   let size x = List.length x.left + 1 + List.length x.right
   (* let count f x = List.length (List.filter f (x.left @ x.here :: x.right)) *)
 end
-
 
 let term_of_string s =
   let l = Lexing.from_string s in
@@ -77,6 +80,10 @@ let kind g =
     let y = find_ivertex g "y" in
     let z = find_ivertex g "z" in
     let t = find_ivertex g "t" in
+    if not (is_minimal g x) then `Skip "x is not minimal" else
+    if not (is_minimal g y) then `Skip "y is not minimal" else
+    if not (is_minimal g z) then `Skip "z is not minimal" else
+    if not (is_minimal g t) then `Skip "t is not minimal" else
     if Graph.is_separator g 1 2 [x;z] then `Skip "{x,z} is a separation pair" else
     if Graph.is_separator g 1 2 [x;t] then `Skip "{x,t} is a separation pair" else
     if Graph.is_separator g 1 2 [y;z] then `Skip "{y,z} is a separation pair" else
@@ -90,40 +97,65 @@ let kind g =
     in
     let g' = Graph.filter_edges (fun e -> (Graph.einfo e)#label <> "?") g in
     test_seps (fun a b -> `Skip (a^" cannot be a "^b^" pair")) g' (fun () ->
-    if not (is_minimal g x) then `Skip "x is not minimal" else
-    if not (is_minimal g y) then `Skip "y is not minimal" else
-    if not (is_minimal g z) then `Skip "z is not minimal" else
-    if not (is_minimal g t) then `Skip "t is not minimal" else
     test_seps (fun a b -> `Refine (a^" is not yet a "^b^" pair")) g (fun () ->
         `Axiom
     ))
 
-let graph1 = center_edges
-             "#<pos=0,0>,<pos=400,0>
-              f<pos=100,100;label=x;radius=6>
-              f<pos=100,-100;label=y;radius=6>
-              f<pos=300,100;label=z;radius=6>
-              f<pos=300,-100;label=t;radius=6>
-              ( {134}?<color=yellow;radius=25>
-              | {345}?<color=red>
-              | {346}?<color=orange>
-              | {52}-<color=violet>
-              | {62}-<color=blue> )"
-let graph2 = center_edges
-             "#<pos=0,0>,<pos=400,0>
-              f<pos=100,100;label=x;radius=6>
-              f<pos=100,-100;label=y;radius=6>
-              f<pos=300,100;label=z;radius=6>
-              f<pos=300,-100;label=t;radius=6>
-              f<pos=200,0>
-              ( {134}?<color=green;radius=25>
-              | {347}?<color=yellow;radius=25>
-              | {357}?<color=red>
-              | {467}?<color=orange>
-              | {572}?<color=violet;radius=25>
-              | {672}?<color=blue;radius=25> )"
+let init_stack =
+  Stack.of_list [
+      center_edges
+        "#<pos=0,0>,<pos=400,0>
+         f<pos=100,100;label=x;radius=6>
+         f<pos=100,-100;label=y;radius=6>
+         f<pos=300,100;label=z;radius=6>
+         f<pos=300,-100;label=t;radius=6>
+         ( {134}?<color=yellow;radius=25>
+         | {345}?<color=red;split=s3>
+         | {346}?<color=orange;split=s3>
+         | {52}-<color=violet>
+         | {62}-<color=blue> )";
+      (* center_edges *)
+      (*   "#<pos=0,0>,<pos=400,0> *)
+      (*    f<pos=100,100;label=x;radius=6> *)
+      (*    f<pos=100,-100;label=y;radius=6> *)
+      (*    f<pos=300,100;label=z;radius=6> *)
+      (*    f<pos=300,-100;label=t;radius=6> *)
+      (*    f<pos=200,0> *)
+      (*    ( {134}?<color=green;radius=25;split=s1> *)
+      (*    | {347}?<color=yellow;radius=25;split=s2> *)
+      (*    | {357}?<color=red;split=s1> *)
+      (*    | {467}?<color=orange;split=s2> *)
+      (*    | {572}?<color=violet;radius=25;split=s1> *)
+      (*    | {672}?<color=blue;radius=25;split=s3> )"; *)
+      center_edges
+        "#<pos=0,0>,<pos=400,0>
+         f<pos=100,100;label=x;radius=6>
+         f<pos=100,-100;label=y;radius=6>
+         f<pos=300,100;label=z;radius=6>
+         f<pos=300,-100;label=t;radius=6>
+         f<pos=200,0>
+         ( {134}?<color=green;radius=25;split=s1>
+         | {347}?<color=yellow;radius=25;split=s>
+         | {357}?<color=red;split=s1>
+         | {467}?<color=orange;split=s1>
+         | {572}?<color=violet;radius=25;split=1>
+         | {672}?<color=blue;radius=25;split=1> )";
+      center_edges
+        "#<pos=0,0>,<pos=400,0>
+         f<pos=100,100;label=x;radius=6>
+         f<pos=100,-100;label=y;radius=6>
+         f<pos=300,100;label=z;radius=6>
+         f<pos=300,-100;label=t;radius=6>
+         f<pos=200,0>
+         ( {134}?<color=green;radius=25;split=s1>
+         | {357}?<color=red;split=s2>
+         | {467}?<color=orange;split=s2>
+         | {572}?<color=violet;radius=25;split=s3>
+         | {672}?<color=blue;radius=25;split=s3> )";
+    ]
+let hist = History.create init_stack
 
-(* initial width/height *)
+(* initial window width/height *)
 let width = 800
 let height = 800
 
@@ -132,10 +164,6 @@ let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
 let file = ref None
-let hist =
-  let s = Stack.create graph1 in
-  let s = Stack.push s graph2 in
-  History.create s
 
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~title:"HG" ()
@@ -149,10 +177,10 @@ let edit_factory = new GMenu.factory (factory#add_submenu "Edit") ~accel_group
 let view_factory = new GMenu.factory (factory#add_submenu "View") ~accel_group
 let term_factory = new GMenu.factory (factory#add_submenu "Term") ~accel_group
 
-let da = GMisc.drawing_area ~width ~height ~packing:vbox#add ()
+let da = GMisc.drawing_area ~width ~height ~packing:(vbox#pack ~expand:true) ()
 let arena = GArena.create ~width ~height ~window da canvas ()
-let entry = GEdit.entry ~editable:true ~packing:(vbox#pack ~expand:false) ()
-let label = GMisc.label ~selectable:true ~xalign:0.01 ~height:100 ~justify:`LEFT ~packing:(vbox#pack ~expand:false) ()
+let entry = GEdit.entry ~text:"0" ~editable:true ~packing:(vbox#pack ~expand:false) ()
+let label = GMisc.label ~selectable:true ~xalign:0.01 ~justify:`LEFT ~packing:(vbox#pack ~expand:true) ()
 
 let dialog title action stock stock' filter =
   let dlg = GWindow.file_chooser_dialog
@@ -180,13 +208,10 @@ let checkpoint() =
   Format.kasprintf (fun s -> History.save hist (Stack.replace (History.present hist) s)) "%a"
     (Term.pp Full) (Graph.to_term !graph)
 
-let current_term k =
-  try Some (term_of_string entry#text)
-  with e -> k e; None
-
-let redraw() =
+let redraw ?(rebox=false) () =
   canvas#clear;
   Graph.draw_on canvas ~iprops:true !graph;
+  if rebox then arena#ensure (Graph.bbox !graph);
   arena#refresh
 
 let display_graph_infos g =
@@ -207,22 +232,24 @@ let display_graph_infos g =
        if Graph.is_full g then Format.fprintf f "Full, ";
        Format.fprintf f "%i components\n" n);
     match kind g with
-    | `Skip msg -> Format.fprintf f "Can be skipped: %s\n" msg
-    | `Refine msg -> Format.fprintf f "Should be refined: %s\n" msg
-    | `Axiom -> Format.fprintf f "Axiom? \n"
+    | `Skip msg -> Format.fprintf f "Can be skipped: %s" msg
+    | `Refine msg -> Format.fprintf f "Should be refined: %s" msg
+    | `Axiom -> Format.fprintf f "Axiom?"
   in
   Format.kasprintf label#set_label "%t" pp_graph_infos
 
 let set_graph g =
+  (* print_endline "set_graph"; *)
   graph := g;
   redraw();
   display_graph_infos g;
-  if (match current_term (fun _ -> ()) with
-      | Some t -> not (Graph.iso Info.same_label g (Graph.of_term t))
-      | None -> true)
+  if (match term_of_string entry#text with
+      | t -> not (Graph.iso Info.same_label g (Graph.of_term t))
+      | exception _ -> true)
   then
     let t = Graph.to_term g in
     assert (Graph.iso Info.same_label g (Graph.of_term t));
+    (* print_endline "set_graph.set_text"; *)
     Format.kasprintf entry#set_text "%a" (Term.pp Sparse) t
 
 let undo _ =
@@ -240,21 +267,25 @@ let on_graph f =
   if !mode = `Normal then checkpoint()
 
 let text_changed _ =
+  (* print_endline "text_changed"; *)
   active := `N;
-  match current_term (fun _ -> label#set_label "Parsing error\n") with
-  | Some r ->
+  match term_of_string entry#text with
+  | r ->
      let g = Graph.of_term r in
      if not (Graph.iso Info.same_label g !graph) then (
-       display_graph_infos g;
+       (* print_endline "text_changed.really"; *)
        Place.sources_on_circle g;
-       (* Place.graphviz g; *)
+       Place.graphviz g;
        graph := g;
        active := `N;
-       canvas#clear;
-       Graph.draw_on canvas ~iprops:true g;
-       arena#ensure (Graph.bbox g);
+       redraw ~rebox:true ();
+       display_graph_infos g;
        checkpoint())
-  | None -> ()
+     else
+       display_graph_infos !graph
+  | exception (Failure s) -> label#set_label s
+  | exception Parser.Error -> label#set_label "Parsing error"
+  | exception e -> label#set_label (Printexc.to_string e)
 
 let load =
   dialog "Open graph file" `OPEN `OPEN `OPEN 
@@ -267,12 +298,13 @@ let load =
       History.clear hist)
 
 let save_to f =
-  match current_term (fun _ -> failwith "cannot save while there are parsing errors") with
-  | Some t -> 
+  match term_of_string entry#text with
+  | t -> 
      let l =
        if File.exists f then (
          let old = File.read f in
-         if not (File.compatible old t) then failwith ("current graph is incompatible with the one in "^f);
+         if not (File.compatible old t) then
+           failwith ("current graph is incompatible with the one in "^f);
          old
        ) else File.single t
      in
@@ -280,7 +312,7 @@ let save_to f =
      let l = File.append l t' in
      File.write f l;
      File.export_term f t'
-  | None -> ()
+  | exception _ -> failwith "need a valid term to save"
 
 let save =
   let dlg =
@@ -379,10 +411,11 @@ let subst e s =
   Format.asprintf "%a" (Term.pp Full) (Graph.to_term g)
 
 let set_stack stack =
+  (* print_endline "set_stack"; *)
   History.save hist stack;
   set_graph (graph_of_string (Stack.current stack))
 
-let split() =
+let split ~opt =
   match catch() with
   | `E e ->
      let x = Graph.einfo e in
@@ -393,11 +426,25 @@ let split() =
        | 3 -> 
           let c = match x#get "color" with Some c -> c | None -> "gray" in
           let r = match x#get "radius" with Some r -> r | None -> string_of_float (Constants.eradius 3) in
+          let split = match x#get "split" with Some s -> s | None -> "s123" in
+          let sel c = not opt || String.contains split c in
           let s = History.present hist in
-          let s = Stack.push s (Format.kasprintf (subst e) "{31}?<color=%s>|{32}?<color=%s>" c c) in
-          let s = Stack.push s (Format.kasprintf (subst e) "{21}?<color=%s>|{23}?<color=%s>" c c) in
-          let s = Stack.push s (Format.kasprintf (subst e) "{12}?<color=%s>|{13}?<color=%s>" c c) in
-          let s = Stack.push s (Format.kasprintf (subst e) "*(-<color=%s>,-<color=%s>,-<color=%s>)" c c c) in
+          let s =
+            if sel '3' then
+              Stack.push s (Format.kasprintf (subst e) "{31}?<color=%s>|{32}?<color=%s>" c c)
+            else s in
+          let s =
+            if sel '2' then
+              Stack.push s (Format.kasprintf (subst e) "{21}?<color=%s>|{23}?<color=%s>" c c)
+            else s in
+          let s =
+            if sel '1' then
+              Stack.push s (Format.kasprintf (subst e) "{12}?<color=%s>|{13}?<color=%s>" c c)
+            else s in
+          let s =
+            if sel 's' then
+              Stack.push s (Format.kasprintf (subst e) "*(-<color=%s>,-<color=%s>,-<color=%s>)" c c c)
+            else s in
           let s = Stack.replace s (Format.kasprintf (subst e) "#3 -<color=%s;radius=%s>" c r) in
           set_stack s 
        | 2 -> 
@@ -420,7 +467,7 @@ let right() =
   | Some s -> set_stack s
   | None -> print_endline "already on rightmost case"
 
-let discard force =
+let discard ~force =
   if force || match kind !graph with `Skip _ -> true | _ -> false then
     match Stack.pop (History.present hist) with
     | Some s -> set_stack s
@@ -446,6 +493,7 @@ p:     promote inner vertex as source
 d/r:   remove element
 e:     insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- to name the edge)
 s:     split edge, generating subcases
+o:     optimised split edge, generating less subcases according to the \"split\" specification
 k:     discard current case (when justification is clear)
 K:     discard current case (whatever the situation)
 D:     duplicate current case
@@ -458,10 +506,11 @@ h:     print this help message"
        | "f" -> forget()
        | "p" -> promote()
        | "d" | "r" -> remove()
-       | "s" -> split()
        | "e" -> mode := `InsertEdge Seq.empty
-       | "k" -> discard false
-       | "K" -> discard true
+       | "s" -> split ~opt:false
+       | "o" -> split ~opt:true
+       | "k" -> discard ~force:false
+       | "K" -> discard ~force:true
        | "D" -> duplicate()
        | _ when GdkEvent.Key.keyval e = GdkKeysyms._Left -> left()
        | _ when GdkEvent.Key.keyval e = GdkKeysyms._Right -> right()
@@ -480,9 +529,9 @@ let fullscreen =
   fs := not !fs
 
 let on_term f () =
-   match current_term (fun _ -> failwith "cannot work on the term while there are parsing errors") with
-   | Some t -> Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (f t)
-   | None -> ()                       
+   match term_of_string entry#text with
+   | t -> Format.kasprintf entry#set_text "%a" (Term.pp Sparse) (f t)
+   | exception _ -> print_endline "current term is not valid"
 
 let _ = file_factory#add_item "Open" ~key:GdkKeysyms._O ~callback:load
 let _ = file_factory#add_item "Save" ~key:GdkKeysyms._S ~callback:save
@@ -504,6 +553,7 @@ let _ = da#event#connect #key_press ~callback:key_press
 let _ = entry#connect#changed ~callback:text_changed
 let _ = window#connect#destroy ~callback:Main.quit
 let _ = window#add_accel_group accel_group
-let _ = entry#set_text graph1; History.clear hist
+let _ = set_stack init_stack
+let _ = arena#ensure (Graph.bbox !graph)
 let _ = window#show ()
 let _ = Main.main ()

@@ -67,7 +67,7 @@ class virtual virtual_arena =
     method virtual private dsize: float*float
     method virtual private refresh: unit
 
-    val mutable view = Box2.empty
+    val mutable view = Box2.unit
     method view = view
 
     method private point_of_dpoint (x,y) =
@@ -91,13 +91,14 @@ class virtual virtual_arena =
     method pointer = self#point_of_dpoint self#dpointer
 
     method ensure b =
-      let bw,bh = Box2.w b, Box2.h b in
-      let w,h = self#dsize in
-      if bw*.h <= bh*.w
-      then view <- Box2.v_mid (Box2.mid b) (V2.smul 1.1 (V2.v (bh*.w/.h) bh))
-      else view <- Box2.v_mid (Box2.mid b) (V2.smul 1.1 (V2.v bw (bw*.h/.w)));
-      self#refresh
-
+      if not (Box2.subset b self#view) then
+        let bw,bh = Box2.w b, Box2.h b in
+        let w,h = self#dsize in
+        if bw*.h <= bh*.w
+        then view <- Box2.v_mid (Box2.mid b) (V2.smul 1.1 (V2.v (bh*.w/.h) bh))
+        else view <- Box2.v_mid (Box2.mid b) (V2.smul 1.1 (V2.v bw (bw*.h/.w)));
+        self#refresh
+        
     method move v =
       view <- Box2.move (self#vector_of_dvector v) view;
       self#refresh

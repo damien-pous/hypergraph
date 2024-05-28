@@ -81,7 +81,7 @@ rule token = parse
   | (key as k) "=\"" ([^'"']* as v) '"'    { keyval k v }
   | (key as k) "='" ([^''']* as v) '''     { keyval k v }
   | eof                                    { EOF }
-  | _ as c                                 { Printf.kprintf failwith "lexing error near `%c'" c }
+  | _ as c                                 { Misc.failwith "Lexing error near `%c'" c }
 
 and comment = parse
   | '\n'                                   { token lexbuf }

@@ -3,6 +3,8 @@ open Hypergraphs_gtk
 open GMain
 open Gg
 
+let _ = exit 0                  (* TMP *)
+
 (* initial width/height *)
 let width = 600
 let height = 600
