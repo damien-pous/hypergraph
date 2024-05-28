@@ -5,47 +5,6 @@ open Hypergraphs_cairo
 
 open GMain
 
-module Stack: sig
-  type 'a t
-  val of_list: 'a list -> 'a t
-  (* val create: 'a -> 'a t *)
-  val current: 'a t -> 'a
-  val left: 'a t -> 'a t option
-  val right: 'a t -> 'a t option
-  val pop: 'a t -> 'a t option
-  val replace: 'a t -> 'a -> 'a t
-  val push: 'a t -> 'a -> 'a t
-  val push_here: 'a t -> 'a -> 'a t
-  val pos: 'a t -> int
-  val size: 'a t -> int
-  (* val count: ('a -> bool) -> 'a t -> int *)
-end = struct
-  type 'a t = { left: 'a list; here: 'a; right: 'a list }
-  let of_list = function
-    | here::right -> { left=[]; here; right }
-    | [] -> failwith "cannot create an empty stack"
-  (* let create x = of_list [x] *)
-  let current x = x.here
-  let left x =
-    match x.left with
-    | [] -> None
-    | here::left -> Some { left; here; right=x.here::x.right }
-  let right x =
-    match x.right with
-    | [] -> None
-    | here::right -> Some { left=x.here::x.left; here; right }
-  let pop x =
-    match x.left,x.right with
-    | [],[] -> None
-    | left,here::right | here::left,right -> Some { left; here; right }
-  let replace x here = { x with here }
-  let push x next  = { x with right = next::x.right }
-  let push_here x here  = { x with here; right = x.here::x.right }
-  let pos x = List.length x.left + 1
-  let size x = List.length x.left + 1 + List.length x.right
-  (* let count f x = List.length (List.filter f (x.left @ x.here :: x.right)) *)
-end
-
 let term_of_string s =
   let l = Lexing.from_string s in
   let t = Parser.sterm Lexer.token l in
@@ -153,7 +112,6 @@ let init_stack =
          | {572}?<color=violet;radius=25;split=s3>
          | {672}?<color=blue;radius=25;split=s3> )";
     ]
-let hist = History.create init_stack
 
 (* initial window width/height *)
 let width = 800
@@ -164,6 +122,7 @@ let graph = ref (Graph.nil ())
 let active = ref `N
 let mode = ref `Normal
 let file = ref None
+let hist = History.create init_stack
 
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~title:"HG" ()
@@ -410,9 +369,9 @@ let subst e s =
   MSet.iter (Place.center_edge g) es;
   Format.asprintf "%a" (Term.pp Full) (Graph.to_term g)
 
-let set_stack ?(save=false) stack =
+let set_stack stack =
   (* print_endline "set_stack"; *)
-  if save then History.save hist stack;
+  History.save ~cmp:Stack.same hist stack;
   set_graph (graph_of_string (Stack.current stack))
 
 let split ~opt =
@@ -431,52 +390,47 @@ let split ~opt =
           let s = History.present hist in
           let s =
             if sel '3' then
-              Stack.push s (Format.kasprintf (subst e) "{31}?<color=%s>|{32}?<color=%s>" c c)
+              Stack.push_right s (Format.kasprintf (subst e) "{31}?<color=%s>|{32}?<color=%s>" c c)
             else s in
           let s =
             if sel '2' then
-              Stack.push s (Format.kasprintf (subst e) "{21}?<color=%s>|{23}?<color=%s>" c c)
+              Stack.push_right s (Format.kasprintf (subst e) "{21}?<color=%s>|{23}?<color=%s>" c c)
             else s in
           let s =
             if sel '1' then
-              Stack.push s (Format.kasprintf (subst e) "{12}?<color=%s>|{13}?<color=%s>" c c)
+              Stack.push_right s (Format.kasprintf (subst e) "{12}?<color=%s>|{13}?<color=%s>" c c)
             else s in
           let s =
             if sel 's' then
-              Stack.push s (Format.kasprintf (subst e) "*(-<color=%s>,-<color=%s>,-<color=%s>)" c c c)
+              Stack.push_right s (Format.kasprintf (subst e) "*(-<color=%s>,-<color=%s>,-<color=%s>)" c c c)
             else s in
           let s = Stack.replace s (Format.kasprintf (subst e) "#3 -<color=%s;radius=%s>" c r) in
-          set_stack ~save:true s 
+          set_stack s 
        | 2 -> 
           let c = match x#get "color" with Some c -> c | None -> "gray" in
           let s = History.present hist in
           let s = Stack.replace s (Format.kasprintf (subst e) "#2 -<color=%s>" c) in
           let s = Stack.push_here s (subst e "#2 0") in
-          set_stack ~save:true  s 
+          set_stack s 
        | _ -> print_endline "may only split edges of arity two and three")
   | `V _ -> print_endline "cannot split a vertex"
   | `N -> ()  
 
-let left() =
-  match Stack.left (History.present hist) with
-  | Some s -> set_stack s
-  | None -> print_endline "already on leftmost case"
-
-let right() =
-  match Stack.right (History.present hist) with
-  | Some s -> set_stack s
-  | None -> print_endline "already on rightmost case"
+let left() = set_stack (Stack.move_left (History.present hist))
+let right() = set_stack (Stack.move_right (History.present hist))
 
 let discard ~force =
   if force || match kind !graph with `Skip _ -> true | _ -> false then
-    match Stack.pop (History.present hist) with
-    | Some s -> set_stack ~save:true  s
-    | None -> print_endline "congrats: this was the last case!"
+    let s = Stack.pop (History.present hist) in
+    let s = if Stack.size s = 0 then
+              (print_endline "discarded the last graph!"; Stack.of_list ["0"])
+            else s
+    in set_stack s
   else print_endline "no obvious reason to discard this case"
 
 let duplicate() =
   let s = History.present hist in
-  History.save hist (Stack.push s (Stack.current s))
+  History.save hist (Stack.push_right s (Stack.current s))
 
 let key_press e =
   (match !mode with

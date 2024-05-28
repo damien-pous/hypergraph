@@ -73,6 +73,7 @@ Seq:         finite sequences, index starting at 1, usually duplicate-free
 Perm:        finite support permutations
 Inj:         finite support injections
 ISeq:        increasing sequences
+Stack:       lists with insertion capabilities at a designated position
 
 Types:       shared class & module types (no implementation)
 

@@ -5,7 +5,12 @@ let present h = let (_,x,_) = !h in x
 let future h = let (_,_,l) = !h in l
 
 let create x = ref ([],x,[])
-let save h x = h := (present h::past h, x, [])
+let save ?cmp h x =
+  if x<>present h then
+    match cmp with
+    | Some cmp when cmp x (present h) -> h := (past h, x, future h)
+    | _ -> h := (present h::past h, x, [])
+            
 let clear h = h := ([],present h,[]) 
 let undo h =  
   match past h with
