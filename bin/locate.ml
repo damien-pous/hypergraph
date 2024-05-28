@@ -410,9 +410,9 @@ let subst e s =
   MSet.iter (Place.center_edge g) es;
   Format.asprintf "%a" (Term.pp Full) (Graph.to_term g)
 
-let set_stack stack =
+let set_stack ?(save=false) stack =
   (* print_endline "set_stack"; *)
-  History.save hist stack;
+  if save then History.save hist stack;
   set_graph (graph_of_string (Stack.current stack))
 
 let split ~opt =
@@ -446,13 +446,13 @@ let split ~opt =
               Stack.push s (Format.kasprintf (subst e) "*(-<color=%s>,-<color=%s>,-<color=%s>)" c c c)
             else s in
           let s = Stack.replace s (Format.kasprintf (subst e) "#3 -<color=%s;radius=%s>" c r) in
-          set_stack s 
+          set_stack ~save:true s 
        | 2 -> 
           let c = match x#get "color" with Some c -> c | None -> "gray" in
           let s = History.present hist in
           let s = Stack.replace s (Format.kasprintf (subst e) "#2 -<color=%s>" c) in
           let s = Stack.push_here s (subst e "#2 0") in
-          set_stack s 
+          set_stack ~save:true  s 
        | _ -> print_endline "may only split edges of arity two and three")
   | `V _ -> print_endline "cannot split a vertex"
   | `N -> ()  
@@ -470,7 +470,7 @@ let right() =
 let discard ~force =
   if force || match kind !graph with `Skip _ -> true | _ -> false then
     match Stack.pop (History.present hist) with
-    | Some s -> set_stack s
+    | Some s -> set_stack ~save:true  s
     | None -> print_endline "congrats: this was the last case!"
   else print_endline "no obvious reason to discard this case"
 
