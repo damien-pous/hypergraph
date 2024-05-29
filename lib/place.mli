@@ -11,4 +11,11 @@ val randomly: #positionned graph -> unit
 val graphviz: ?cmd: string -> #positionned graph -> unit
 
 (** center the edge according to its neighbours *)
-val center_edge:( #positionned as 'a) graph -> 'a edge -> unit
+val center_edge:(#positionned as 'a) graph -> 'a edge -> unit
+
+(** scale the graph placement by a given factor *)
+val scale: float -> #positionned graph -> unit
+
+
+(** center of a graph (= barycenter of its sources) *)
+val graph_center: #positionned graph -> point

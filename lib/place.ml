@@ -79,3 +79,13 @@ let center_edge sg e =
   | _ -> 
      let c = Geometry.center (npos sg n) in
      (einfo e)#move c
+
+let graph_center g =
+  Geometry.center (Seq.lmap (fun s -> s#pos) (Graph.sources g))
+
+let scale s g =
+  let c = graph_center g in
+  let m = M3.mul (M3.move2 c)
+         (M3.mul (M3.scale2 (V2.v s s))
+                 (M3.move2 (V2.neg c))) in
+  Graph.iter_infos (fun e -> e#move (P2.tr m e#pos)) g

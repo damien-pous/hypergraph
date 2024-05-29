@@ -276,7 +276,7 @@ let scale s =
   match catch() with
   | `V v -> (Graph.vinfo !graph v)#scale s; checkpoint(); redraw()
   | `E e -> (Graph.einfo e)#scale s; checkpoint(); redraw()
-  | `N -> ()
+  | `N -> Place.scale s !graph; checkpoint(); redraw()
 
 let lift() =
   on_graph (Graph.lft (Info.positionned_source (Graph.arity !graph+1) arena#pointer))
@@ -386,7 +386,7 @@ let key_press e =
        | "h" -> print_endline 
                   "** keys **
 c:     center edge
--/+:   shrink/enlarge element
+-/+:   shrink/enlarge element or whole graph
 i:     add inner vertex
 l:     add new source (lift)
 f:     forget source 
