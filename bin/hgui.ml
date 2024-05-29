@@ -16,6 +16,7 @@ let graph_of_string s =
 
 let place_graph g =
   Place.sources_on_circle g;
+  Place.fix_sources g;
   Place.graphviz g
 
 let place_term t =
@@ -311,6 +312,13 @@ let edge l s =
 let center() =
   match catch() with
   | `E e -> Place.center_edge !graph e; checkpoint(); redraw()
+  | _ -> Place.improve_placement 0.05 !graph; checkpoint(); redraw()
+
+let block b =
+  let f = if b then Place.fix else Place.unfix in
+  match catch() with
+  | `E e -> f (Graph.einfo e); checkpoint()
+  | `V v -> f (Graph.vinfo !graph v); checkpoint()
   | _ -> ()
 
 let subst e s =
@@ -385,8 +393,9 @@ let key_press e =
       (match GdkEvent.Key.string e with
        | "h" -> print_endline 
                   "** keys **
-c:     center edge
--/+:   shrink/enlarge element or whole graph
+c:     center edge / optimise placement
+-/+:   shrink/enlarge element / whole graph
+b/u:   block/unblock element for placement optimisations
 i:     add inner vertex
 l:     add new source (lift)
 f:     forget source 
@@ -400,6 +409,8 @@ K:     discard current case (whatever the situation)
 D:     duplicate current case
 h:     print this help message"
        | "c" -> center()
+       | "b" -> block true
+       | "u" -> block false
        | "-" -> scale (1. /. 1.1)
        | "+" -> scale 1.1
        | "i" -> ignore(ivertex())

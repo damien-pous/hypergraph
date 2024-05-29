@@ -89,3 +89,52 @@ let scale s g =
          (M3.mul (M3.scale2 (V2.v s s))
                  (M3.move2 (V2.neg c))) in
   Graph.iter_infos (fun e -> e#move (P2.tr m e#pos)) g
+
+let improve_placement s g =
+  let t = Hashtbl.create (Graph.size g) in
+  let add x s v =
+    let v = V2.smul s v in
+    match Hashtbl.find t x with
+    | u -> Hashtbl.replace t x (V2.add u v)
+    | exception Not_found -> Hashtbl.add t x v
+  in
+  (* repulse *)
+  Graph.iter_infos (fun x ->
+      Graph.iter_infos (fun y ->
+          if x!=y then
+            let xy = V2.sub y#pos x#pos in
+            let d = V2.norm xy in
+            if d = 0.0 then
+              add x x#radius (V2.ltr (M2.rot2 (Random.float (2.*.Float.pi))) V2.ox)
+            else
+              let dmin =
+                if x#kind = `E || y#kind = `E then
+                  2. *. (x#radius +. y#radius)
+                else
+                  4. *. Constants.eradius 3
+              in
+              if d < dmin then add x (3.*.(1. -. dmin/.d)) xy
+        ) g
+    ) g;
+  (* attract *)
+  Graph.iter_edges (fun e ->
+      Seq.iter (fun _ x ->
+          let x = Graph.vinfo g x in
+          let ex = V2.sub x#pos e#pos in
+          let d = V2.norm ex in
+          let dmin = 2. *. (e#radius +. x#radius) in
+          if d > dmin then (
+            let s = dmin/.d -. 1. in
+            add x s ex;
+            add e (-.s) ex
+          )          
+        )
+    ) g;
+  Hashtbl.iter (fun x u ->
+      if x#get "fixed" <> Some "true" then
+        x#move (V2.add x#pos (V2.smul s u))) t
+
+let fix x = x#set "fixed" "true"
+let unfix x = x#unset "fixed"
+
+let fix_sources g = Graph.iter_sources (fun _ -> fix) g

@@ -74,6 +74,9 @@ let components g =
 let is_prime g = MSet.size (components g) = 1
 let is_fullprime g = is_full g && is_prime g
 
+let adjacent g u v =
+  MSet.exists (fun e -> Seq.mem u e.neighbours && Seq.mem v e.neighbours) g.edges
+
 let src_map f = function
   | Src i -> Src (f i)
   | x -> x
@@ -369,6 +372,8 @@ let is_hard x = sext U.is_hard x
 let width_less_than k = sext (U.width_less_than k)
 
 let components (s,g) = MSet.map (fun g -> (s,g)) (U.components g)
+
+let adjacent x = sext U.adjacent x
 
 let is_forget_point x = sext U.is_forget_point x
 let forget_points x = sext U.forget_points x

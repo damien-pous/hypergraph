@@ -54,6 +54,8 @@ class virtual holder_ =
     method virtual private add: string -> string -> unit
     method virtual get: string -> string option
     method virtual set: string -> string -> unit
+    method virtual unset: string -> unit
+    method virtual kind: [`E|`I|`S]
   end
 
 class holder (l: kvl) =
@@ -65,6 +67,7 @@ class holder (l: kvl) =
     method private add k v = self#rem k; kvl <- (k,v)::kvl 
     method get k = List.assoc_opt k kvl
     method set k v = kvl <- (k,v)::List.remove_assoc k kvl
+    method unset k = kvl <- List.remove_assoc k kvl
   end
 
 class virtual printer =
@@ -84,6 +87,7 @@ class virtual iprinter_ =
     inherit printer
     method private pp_label _ _ = ()
     method private pp_other mode f = if mode=Full then pp_kvl f self#kvl
+    method kind = `I
     initializer label <- get_label self#kvl
   end
 class iprinter l = object inherit holder l inherit iprinter_ end
@@ -92,6 +96,7 @@ class virtual sprinter_ i =
   object(self)
     inherit iprinter_
     method! pp_empty mode = mode=Sparse || (self#update_kvl; self#kvl=[])
+    method! kind = `S
     initializer if not (self#has "label") then label <- string_of_int i
   end
 class sprinter i l =
@@ -105,6 +110,7 @@ class virtual eprinter_ =
     inherit printer
     method private pp_label _ f = pp_label f label
     method private pp_other mode f = if mode=Full then pp_kvl f self#kvl
+    method kind = `E
     initializer label <- get_label self#kvl; self#rem "label"
   end
 class eprinter _ l = object inherit holder l inherit eprinter_ end

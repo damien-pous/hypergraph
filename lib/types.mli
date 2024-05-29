@@ -33,8 +33,10 @@ class type printable =
     method label: string
     method get: string -> string option
     method set: string -> string -> unit
+    method unset: string -> unit
     method pp: pp_mode -> formatter -> unit
     method pp_empty: pp_mode -> bool
+    method kind: [`E|`I|`S]
   end
 
 val same_label: #printable -> #printable -> bool

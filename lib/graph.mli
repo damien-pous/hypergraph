@@ -24,6 +24,8 @@ val is_atomic: 'a graph -> bool
 val is_empty: 'a graph -> bool
 val is_hard: 'a graph -> bool
 
+val adjacent: 'a graph -> 'a vertex -> 'a vertex -> bool
+
 val width_less_than: int -> 'a graph -> bool
 
 val components: 'a graph -> 'a graph mset
@@ -88,6 +90,8 @@ module U: sig
   val is_atomic: 'a ugraph -> bool
   val is_empty: 'a ugraph -> bool
   val is_hard: 'a ugraph -> bool
+
+  val adjacent: 'a ugraph -> 'a vertex -> 'a vertex -> bool
 
   val width_less_than: int -> 'a ugraph -> bool
   
