@@ -1,24 +1,14 @@
 (library
  (name hypergraphs)
- (libraries vg)
+ (libraries vg.cairo)
  (modules_without_implementation types)
 ; (flags -w -27)
- (modules :standard \ gArena place file))
-
-(library
- (name hypergraphs_cairo)
- (libraries hypergraphs vg.cairo)
- (modules file))
-
-(library
- (name hypergraphs_gtk)
- (libraries hypergraphs cairo2-gtk vg.cairo)
- (modules gArena))
-
-(library
- (name hypergraphs_place)
- (libraries hypergraphs unix)
- (modules place))
+ (modules :standard \ gArena))
 
 (menhir (modules parser))
 (ocamllex lexer)
+
+(library
+ (name hypergraphs_gtk)
+ (libraries hypergraphs cairo2-gtk)
+ (modules gArena))

@@ -1,6 +1,4 @@
 open Hypergraphs
-open Hypergraphs_place
-open Hypergraphs_cairo
 
 let check f =
   ignore(File.read f)

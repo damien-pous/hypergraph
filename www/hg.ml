@@ -1,5 +1,4 @@
 open Hypergraphs
-let _ = Graph.arity
 
 open Js_of_ocaml
 open Gg

@@ -1,4 +1,3 @@
-open Hypergraphs
 open Graph
 open Gg
 
@@ -58,9 +57,8 @@ let pp_dot f g =
     ) (edges g);
   Format.fprintf f "}\n"
 
-let graphviz g =
-  (* neato/fdp/sfdp *)
-  let i,o = Unix.open_process "neato -s72" in
+let graphviz ?(cmd="neato -s72") g =
+  let i,o = Unix.open_process cmd in
   let f = Format.formatter_of_out_channel o in
   let l = Lexing.from_channel i in
   Format.fprintf f "%a%!" pp_dot g; close_out o;
@@ -81,4 +79,3 @@ let center_edge sg e =
   | _ -> 
      let c = Geometry.center (npos sg n) in
      (einfo e)#move c
-

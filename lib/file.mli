@@ -1,4 +1,3 @@
-open Hypergraphs
 open Types
 
 (* exporting lists of images as multipage documents *)

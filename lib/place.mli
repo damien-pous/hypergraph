@@ -1,4 +1,3 @@
-open Hypergraphs
 open Types
 open Graph
 
@@ -8,8 +7,8 @@ val sources_on_circle: #positionned graph -> unit
 (** position elements randomly *)
 val randomly: #positionned graph -> unit
 
-(** position the graph using graphviz *)
-val graphviz: #positionned graph -> unit
+(** position the graph using graphviz (only on Unix systems) *)
+val graphviz: ?cmd: string -> #positionned graph -> unit
 
 (** center the edge according to its neighbours *)
 val center_edge:( #positionned as 'a) graph -> 'a edge -> unit
