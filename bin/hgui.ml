@@ -81,7 +81,7 @@ let file = ref
              (match Sys.argv with
               | [|_|] -> "default"
               | [|_;file|] when File.exists file -> file
-              | _ -> Format.eprintf "usage: locate [file]\n"; exit 1)
+              | _ -> Format.eprintf "usage: hgui [file]\n"; exit 1)
 let hist = History.create (Stack.of_list[])
 
 let _ = GtkMain.Main.init ()

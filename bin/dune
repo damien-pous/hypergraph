@@ -1,7 +1,6 @@
 (executable
- (public_name hg-locate)
- (name locate)
- (modules locate)
+ (public_name hgui)
+ (modules hgui)
  (libraries hypergraphs hypergraphs_gtk))
 
 (executable
@@ -9,8 +8,16 @@
  (modules hg)
  (libraries hypergraphs))
 
+;; internal: to understand fonts & scales
 (executable
  (public_name scales)
  (name scales)
  (modules scales)
  (libraries vg.cairo))
+
+;; internal: to play with edge geometry
+(test
+ (name geo)
+ (modules geo)
+ (libraries hypergraphs hypergraphs_gtk) 
+ )

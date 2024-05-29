@@ -1,4 +1,6 @@
-all:: test run
+RUN=hgui
+
+all:: run
 
 build::
 	dune build
@@ -10,7 +12,7 @@ test::
 run::
 	dune build
 	dune runtest
-	dune exec ./bin/locate.exe axioms
+	dune exec ./bin/$(RUN).exe axioms
 
 www::
 	dune runtest

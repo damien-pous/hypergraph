@@ -4,10 +4,3 @@
  (libraries hypergraphs)
 ; (flags -w -27)
 )
-
-(test
- (name geo)
- (modules geo)
- (libraries hypergraphs hypergraphs_gtk) 
-; (flags -w -27)
- )
