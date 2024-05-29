@@ -133,8 +133,9 @@ let redraw ?(rebox=false) () =
   if rebox then arena#ensure (Graph.bbox !graph);
   arena#refresh
 
-let display_graph_infos g =
+let display_graph_infos() =
   let s = History.present hist in
+  let g = !graph in
   let pp_graph_infos f =
     Format.fprintf f "Graph %i/%i\n" (Stack.pos s) (Stack.size s);    
     Format.fprintf f "Treewidth: %i\n" (Graph.width g);
@@ -161,7 +162,7 @@ let set_graph ?rebox g =
   (* print_endline "set_graph"; *)
   graph := g;
   redraw ?rebox ();
-  display_graph_infos g;
+  display_graph_infos();
   if (match term_of_string entry#text with
       | t -> not (Graph.iso Info.same_label g (Graph.of_term t))
       | exception _ -> true)
@@ -197,10 +198,10 @@ let text_changed _ =
        graph := g;
        active := `N;
        redraw ~rebox:true ();
-       display_graph_infos g;
+       display_graph_infos();
        checkpoint())
      else
-       display_graph_infos !graph
+       display_graph_infos()
   | exception (Failure s) -> label#set_label s
   | exception Parser.Error -> label#set_label "Parsing error"
   | exception e -> label#set_label (Printexc.to_string e)
@@ -375,7 +376,8 @@ let discard ~force =
 
 let duplicate() =
   let s = History.present hist in
-  History.save hist (Stack.push_right s (Stack.current s))
+  History.save hist (Stack.push_right s (Stack.current s));
+  display_graph_infos()
 
 let key_press e =
   (match !mode with
