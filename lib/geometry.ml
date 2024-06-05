@@ -299,3 +299,12 @@ let edge c l =
   | [x;y] -> fallback (edge2 c x y)
   | [x;y;z] -> fallback (edge3 c x y z)
   | _ -> edge_gen c l
+
+
+let scale_box s b =
+  let c = Box2.mid b in
+  let m = M3.mul (M3.move2 c)
+         (M3.mul (M3.scale2 (V2.v s s))
+                 (M3.move2 (V2.neg c))) in
+  Box2.tr m b
+

@@ -15,13 +15,11 @@ let graph_of_string s =
   Graph.of_term (term_of_string s)
 
 let place_graph g =
-  Place.sources_on_circle g;
-  Place.fix_sources g;
-  Place.graphviz g
+  Place.automatic g
 
 let place_term t =
   let g = Graph.of_term t in
-  place_graph g
+  Place.automatic g
 
 (* let center_edges s = *)
 (*   let g = graph_of_string s in *)
@@ -195,7 +193,7 @@ let text_changed _ =
      let g = Graph.of_term r in
      if not (Graph.iso Info.same_label g !graph) then (
        (* print_endline "text_changed.really"; *)
-       place_graph g;
+       Place.automatic g;
        graph := g;
        active := `N;
        redraw ~rebox:true ();
@@ -430,7 +428,7 @@ h:     print this help message"
        | s -> Format.printf "skipping key %s@." s)
    | `InsertEdge l ->
       (match GdkEvent.Key.string e with
-       | "-" | "" -> mode := `Normal; edge l ""
+       | "-" -> mode := `Normal; edge l ""
        | s -> mode := `Normal; edge l s)
   ); true
 

@@ -57,3 +57,6 @@ val edge2: circle -> point -> point -> path
 val edge3: circle -> point -> point -> point -> path
 
 val edge: circle -> point list -> path
+
+(* scale a box around its center *)
+val scale_box: float -> box -> box

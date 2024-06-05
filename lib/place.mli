@@ -22,9 +22,13 @@ val graph_center: #positionned graph -> point
 
 (** improve the current placement, using elastic dynamics *)
 val improve_placement: float -> #positionned graph -> unit
+val elastic: #positionned graph -> unit
 
 (** fix or unfix nodes for previous function *)
 val fix: #positionned -> unit
 val unfix: #positionned -> unit
 
 val fix_sources: #positionned graph -> unit
+
+(** automatic placement (graphviz if available, random+elastic otherwise) *)
+val automatic: #positionned graph -> unit

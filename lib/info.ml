@@ -79,7 +79,7 @@ class virtual printer =
     method virtual private pp_other: pp_mode -> Format.formatter -> unit
     method private update_kvl = ()
     method pp mode f = self#update_kvl; self#pp_label mode f; self#pp_other mode f
-    method pp_empty (_: pp_mode): bool = assert false (* only for sources *)
+    method pp_empty mode = mode=Sparse || (self#update_kvl; self#kvl=[])
   end
 
 class virtual iprinter_ =
@@ -95,7 +95,6 @@ class iprinter l = object inherit holder l inherit iprinter_ end
 class virtual sprinter_ i =
   object(self)
     inherit iprinter_
-    method! pp_empty mode = mode=Sparse || (self#update_kvl; self#kvl=[])
     method! kind = `S
     initializer if not (self#has "label") then label <- string_of_int i
   end

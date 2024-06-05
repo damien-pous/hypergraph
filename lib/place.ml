@@ -134,7 +134,22 @@ let improve_placement s g =
       if x#get "fixed" <> Some "true" then
         x#move (V2.add x#pos (V2.smul s u))) t
 
+let elastic g =
+  randomly g;
+  for _ = 1 to 100 do
+    improve_placement 0.1 g
+  done
+
 let fix x = x#set "fixed" "true"
 let unfix x = x#unset "fixed"
 
 let fix_sources g = Graph.iter_sources (fun _ -> fix) g
+
+let automatic g =
+  sources_on_circle g;
+  fix_sources g;
+  try
+    if not Sys.unix then raise Not_found;
+    graphviz g
+  with
+    _ -> randomly g; elastic g
