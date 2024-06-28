@@ -89,8 +89,9 @@ NTerm:       normalised terms (full prime decomposed)
 Lexer:       lexer
 Parser:      parser (produces raw terms)
 
-Picture:     canvas for drawing & virtual arenas
+Canvas:      canvas for drawing pictures
 Geometry:    geometric utilities to draw edges
+Arena: 	     canvas + viewport
 
 Graph:       graphs and associated functions
 
@@ -98,11 +99,16 @@ Place:       placing graphs
 
 File:        HG files and functions to manipulate them
 
-GArena:      GTK arenas
+Locate:	     UI-independent application logic
+GArena:	     GTK arena
+
 
 ## bin
 Hg:          text mode program
-Gui:         GTK program
+Hgui:        GTK program
+
+## www
+Hg:	     web applet
 
 ## tests
 Sanity:      sanity checks

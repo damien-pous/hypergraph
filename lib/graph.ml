@@ -473,7 +473,7 @@ let draw_on (draw: canvas) ?(iprops=false) (g: #positionned graph) =
   ()
 
 let draw ?iprops g =
-  let c = new Picture.basic_canvas in
+  let c = new Canvas.basic in
   draw_on c ?iprops g;
   c#get
 

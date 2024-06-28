@@ -3,7 +3,7 @@ open Vg
 open Types
 open Misc
 
-let nopic = new Picture.void_canvas
+let nopic = new Canvas.void
 let debug = ref nopic
 let set_debug pic = debug := pic
 let unset_debug () = debug := nopic

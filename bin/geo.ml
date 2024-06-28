@@ -7,14 +7,13 @@ open Gg
 let width = 600
 let height = 600
 
-let draw = new Picture.basic_canvas
-let _ = Geometry.set_debug draw
-
 let _ = GtkMain.Main.init ()
 let window = GWindow.window ~width ~height ~title:"HG - geometry debug" ()
 let vbox = GPack.vbox ~packing:window#add ()
 let da = GMisc.drawing_area ~packing:vbox#add ()
-let arena = GArena.create ~width ~height ~window da draw ()
+let arena = GArena.create ~width ~height ~window da ()
+let draw = arena#canvas
+let _ = Geometry.set_debug draw
 let _ = arena#ensure (Box2.v V2.zero (Size2.v 300. 300.))
 
 let fill = Color.gray ~a:0.5 0.6
@@ -99,7 +98,6 @@ let key_press e =
 let _ = GtkBase.Widget.add_events da#as_widget [`BUTTON_MOTION; `BUTTON_PRESS]
 let _ = da#event#connect#motion_notify ~callback:motion
 let _ = da#event#connect#button_press ~callback:button
-let _ = arena#enable_moves
 let _ = window#event#connect #key_press ~callback:key_press
 let _ = window#connect#destroy ~callback:Main.quit
 let _ =

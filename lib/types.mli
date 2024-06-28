@@ -70,14 +70,15 @@ class type canvas =
 
 class type arena =
   object
+    method canvas: canvas
     method view: box
     method ensure: box -> unit
     method zoom: float -> unit
     method move: float*float -> unit
     method resize: float*float -> unit
     method pointer: point
+    method refresh: unit
   end
-
 
 module type BASE = sig
   type 'a t

@@ -3,7 +3,8 @@
  (libraries vg.cairo)
  (modules_without_implementation types)
 ; (flags -w -27)
- (modules :standard \ gArena))
+(modules :standard \ gArena)
+ )
 
 (menhir (modules parser))
 (ocamllex lexer)

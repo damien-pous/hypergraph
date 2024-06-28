@@ -16,7 +16,7 @@
  (libraries vg.cairo))
 
 ;; internal: to play with edge geometry
-(test
+(executable
  (name geo)
  (modules geo)
  (libraries hypergraphs hypergraphs_gtk) 

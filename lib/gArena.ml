@@ -2,9 +2,9 @@ open Hypergraphs
 open Gg
 open Vg
 
-class arena ~width ~height ?window da canvas () =  
+class arena ~width ~height ?window da () =
   object(self)
-    inherit Picture.virtual_arena
+    inherit Arena.generic
         
     val mutable backing = GDraw.pixmap ~width ~height ?window ()
     
@@ -16,12 +16,12 @@ class arena ~width ~height ?window da canvas () =
       let x,y = da#misc#pointer in
       float_of_int x, float_of_int y      
     
-    method refresh =
+    method! refresh =
       let cr = Cairo_gtk.create backing#pixmap in  
       let vgr = Vgr.create (Vgr_cairo.target cr) `Other in 
       let w,h = self#dsize in
       let size = Size2.v w h in
-      let image = I.blend canvas#get (I.const Color.white) in
+      let image = I.blend self#canvas#get (I.const Color.white) in
       let _ = Vgr.render vgr (`Image (size, self#view, image)) in
       let _ = Vgr.render vgr (`End) in
       da#misc#draw None
@@ -75,18 +75,14 @@ class arena ~width ~height ?window da canvas () =
          self#move (float_of_int (x0-x), float_of_int (y0-y)); mode <- Some p; true
       | _ -> false
     
-    (* not by default, so that other widget have a chance to react first *)
-    method enable_moves =
-     let _ = da#event#connect#button_press ~callback:self#button_press in
-     let _ = da#event#connect#button_release ~callback:self#button_release in
-     let _ = da#event#connect#motion_notify ~callback:self#motion_notify in
-     GtkBase.Widget.add_events da#as_widget [ `BUTTON_MOTION; `BUTTON_PRESS; `BUTTON_RELEASE ]      
-    
     initializer
     let _ = da#event#connect#expose ~callback:self#expose in
     let _ = da#event#connect#configure ~callback:self#configure in
     let _ = da#event#connect#scroll ~callback:self#scroll in
-    ()    
+    let _ = da#event#connect#button_press ~callback:self#button_press in
+    let _ = da#event#connect#button_release ~callback:self#button_release in
+    let _ = da#event#connect#motion_notify ~callback:self#motion_notify in
+    GtkBase.Widget.add_events da#as_widget [ `BUTTON_MOTION; `BUTTON_PRESS; `BUTTON_RELEASE ]      
   end
 
   (* TODO: connect  shift motion to move *)
