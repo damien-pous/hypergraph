@@ -1,15 +1,17 @@
 open Types
 
+type term = Types.positionned Term.t
+
 let term_of_string s =
   let l = Lexing.from_string s in
   let t = Parser.sterm Lexer.token l in
   Term.map Info.kvl_to_positionned t
 
-let string_of_term =
-  Format.asprintf "%a" (Term.pp Full)
-
 let graph_of_string s =
   Graph.of_term (term_of_string s)
+
+let string_of_term =
+  Format.asprintf "%a" (Term.pp Full)
 
 let place_term t =
   let g = Graph.of_term t in
@@ -71,6 +73,10 @@ class virtual locate (arena: Types.arena) =
     method virtual warning: 'a. ('a, Format.formatter, unit, unit) format4 -> 'a
     method virtual info: 'a. ('a, Format.formatter, unit, unit) format4 -> 'a
     method virtual help: 'a. ('a, Format.formatter, unit, unit) format4 -> 'a
+
+    method private virtual read: string -> term list
+    method private virtual write: string -> term list -> unit
+    method private virtual export: string -> term list -> unit
         
     val hist = History.create (Stack.of_list[])
     val mutable graph = Graph.nil ()
@@ -302,7 +308,7 @@ class virtual locate (arena: Types.arena) =
       | `E e ->
          (Graph.einfo e)#move arena#pointer;
          self#redraw()
-      | `N -> ()
+      | `N -> ()    
 
     method on_key_press s =
       match mode with
@@ -310,21 +316,26 @@ class virtual locate (arena: Types.arena) =
          (match s with
           | "h" -> self#help 
                      "** keys **
-c:     center edge / optimise placement
--/+:   shrink/enlarge element / whole graph
-b/u:   block/unblock element for placement optimisations
-i:     add inner vertex
-l:     add new source (lift)
-f:     forget source 
-p:     promote inner vertex as source
-d/r:   remove element
-e:     insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- to name the edge)
-s:     split edge, generating subcases
-o:     optimised split edge, generating less subcases according to the \"split\" specification
-k:     discard current case (when justification is clear)
-K:     discard current case (whatever the situation)
-D:     duplicate current case
-h:     print this help message"
+c:      center edge / optimise placement
+-/+:    shrink/enlarge element / whole graph
+b/u:    block/unblock element (for later placement optimisations)
+i:      add inner vertex
+l:      add new source (lift)
+f:      forget source 
+p:      promote inner vertex as source
+d:      remove element
+e:      insert edge (click on the sequence of neighbours, then press a,b,c,d,e,- to name the edge)
+Z/R:    undo/redo
+N:      normalise term
+G:      desugar term
+arrows: previous/next graph
+s:      split edge, generating subcases
+o:      optimised split edge, generating less subcases according to the \"split\" specification
+k:      discard current case (when justification is clear)
+K:      discard current case (whatever the situation)
+D:      duplicate current case
+r:      refresh picture
+h:      print this help message"
           | "c" -> self#center
           | "b" -> self#block true
           | "u" -> self#block false
@@ -334,16 +345,20 @@ h:     print this help message"
           | "l" -> self#lift
           | "f" -> self#forget
           | "p" -> self#promote
-          | "d" | "r" -> self#remove
+          | "d" -> self#remove
+          | "r" -> arena#refresh
           | "e" -> mode <- `InsertEdge Seq.empty
           | "s" -> self#split ~opt:false
           | "o" -> self#split ~opt:true
           | "k" -> self#discard ~force:false
           | "K" -> self#discard ~force:true
           | "D" -> self#duplicate
-          | "left" -> self#left
-          | "right" -> self#right
-          | "" -> ()
+          | "ArrowLeft" -> self#left
+          | "ArrowRight" -> self#right
+          | "Z" -> self#undo()
+          | "R" -> self#redo()
+          | "N" -> self#normalise_term()
+          | "G" -> self#desugar_term()
           | s -> self#warning "skipping key %s@." s)
       | `InsertEdge l ->
          match s with
@@ -358,18 +373,22 @@ h:     print this help message"
     method normalise_term() = self#on_term NTerm.get
     method desugar_term() = self#on_term PTerm.get
 
-    method load_from file =
-      let l = File.read file in
+    method private init_with l =
       List.iter place_term l;
       let s = Stack.of_list (List.map string_of_term l) in
       self#set_stack ~rebox:true s;
       self#checkpoint;
-      History.clear hist  
+      History.clear hist
+
+    method init l = self#init_with (List.map term_of_string l)
+
+    method load_from file = self#init_with (self#read file)
+      
 
     method save_to file =
       let s = Stack.to_list (History.present hist) in
       let s = List.map term_of_string s in
-      File.write file s;
-      File.export file s
+      self#write file s;
+      self#export file s
 
   end

@@ -1,3 +1,4 @@
+open Hypergraphs
 open Gg
 open Vg
 

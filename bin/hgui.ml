@@ -1,4 +1,5 @@
 open Hypergraphs
+open Hypergraphs_cairo
 open Hypergraphs_gtk
 
 open GMain
@@ -53,12 +54,15 @@ let dialog title action stock stock' filter =
 
 class glocate =
   object
-    inherit Locate.locate arena 
+    inherit Locate.locate arena
     method entry = entry#text
     method set_entry fmt = Format.kasprintf entry#set_text fmt
     method warning fmt = Format.kasprintf print_endline fmt
     method info fmt = Format.kasprintf label#set_text fmt
     method help fmt = Format.kasprintf print_endline fmt
+    method private read = File.read
+    method private write = File.write
+    method private export = File.export
   end
 let self = new glocate
 
@@ -92,8 +96,8 @@ let on_entry_changed _ =
 
 let on_key_press ev =
   let s =
-    if GdkEvent.Key.keyval ev = GdkKeysyms._Left then "left"
-    else if GdkEvent.Key.keyval ev = GdkKeysyms._Right then "right"
+    if GdkEvent.Key.keyval ev = GdkKeysyms._Left then "ArrowLeft"
+    else if GdkEvent.Key.keyval ev = GdkKeysyms._Right then "ArrowRight"
     else GdkEvent.Key.string ev
   in
   self#on_key_press s;

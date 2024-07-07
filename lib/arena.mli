@@ -6,5 +6,5 @@ class virtual generic:
     method virtual private dpointer: float*float
     method virtual private dsize: float*float
     (* refresh called on ensure/zoom/move, but not on resize *)
-    inherit arena    
+    inherit arena
   end

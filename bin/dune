@@ -1,12 +1,12 @@
 (executable
  (public_name hgui)
  (modules hgui)
- (libraries hypergraphs hypergraphs_gtk))
+ (libraries hypergraphs hypergraphs_cairo hypergraphs_gtk))
 
 (executable
  (public_name hg)
  (modules hg)
- (libraries hypergraphs))
+ (libraries hypergraphs hypergraphs_cairo))
 
 ;; internal: to understand fonts & scales
 (executable
