@@ -167,7 +167,7 @@ let onload _ =
   (* add_listener entry Html.Event.focus (fun _ -> entryfocused := true; Js._true); *)
   (* add_listener entry Html.Event.blur (fun _ -> entryfocused := false; Js._true); *)
   self#init initial_terms;
-  (* infos##focus; *)
+  strokes##focus;
   Js._false
 
 let _ =

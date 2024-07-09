@@ -1,0 +1,14 @@
+a{text-decoration:none}
+a:link{color:#000099}
+a:visited{color:#007090}
+a:hover{color:#F09000}
+a:active{color:#F09000}
+a:focus{color:#F09000}
+div#canvas {
+    width: 50%;
+    height: 50%;
+    border: 1px solid;
+    resize: both;
+    overflow: auto;
+}
+

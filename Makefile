@@ -1,4 +1,5 @@
 RUN=hgui
+WWW=~/work/public_html/hypergraph/
 
 all:: run
 
@@ -17,6 +18,7 @@ run::
 www::
 	dune runtest
 	dune build ./www/hg.bc.js
+	cp ./www/hip.css ./www/index.html _build/default/www/hg.bc.js $(WWW)
 
 clean::
 	dune clean
