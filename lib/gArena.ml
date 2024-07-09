@@ -85,6 +85,4 @@ class arena ~width ~height ?window da () =
     GtkBase.Widget.add_events da#as_widget [ `BUTTON_MOTION; `BUTTON_PRESS; `BUTTON_RELEASE ]      
   end
 
-  (* TODO: connect  shift motion to move *)
-
 let create = new arena

@@ -7,7 +7,7 @@ open Vg
 
 let initial_terms =
   [
-    "a.b|fc|ld"
+    "#<pos='0,0'>,<pos='400,0'>a.b|fc|ld"
   ;
     "#<pos='0,0'>,<pos='400,0'> f<pos='100,100';label='x';radius='6'>f<pos='100,-100';label='y';radius='6'>({234}f<pos='300,100';label='z';radius='6'>({234}-?<pos='166.667,33.3333';color='red';split='s3'> | {14}r-<pos='350,50';color='violet'>) | {234}f<pos='300,-100';label='t';radius='6'>({14}r-<pos='350,-50';color='blue'> | {234}-?<pos='166.667,-33.3333';color='orange';split='s3'>) | {134}-?<pos='66.6667,0';color='yellow';radius='25'>)"
   ;
@@ -47,13 +47,13 @@ let add_listener elt evt f =
   ignore(Html.addEventListener elt evt (Html.handler f) Js._true)
   
 
-class arena (canvas: Html.canvasElement Js.t) =
+class arena (canvasdiv: Html.divElement Js.t) (canvas: Html.canvasElement Js.t) =
   object(self)
     inherit Arena.generic
     
     method private dsize =
-      float_of_int canvas##.width,
-      float_of_int canvas##.height
+      float_of_int canvasdiv##.clientWidth,
+      float_of_int canvasdiv##.clientHeight
 
     val mutable dpointer = (0,0)
     method private dpointer =
@@ -62,7 +62,10 @@ class arena (canvas: Html.canvasElement Js.t) =
       float_of_int y
     
     method! refresh =
-      let size = Box2.size self#view in
+      canvas##.width := canvasdiv##.clientWidth;
+      canvas##.height := canvasdiv##.clientHeight;
+      let w,h = self#dsize in
+      let size = V2.v w h in
       let vgr = Vgr.create (Vgr_htmlc.target ~resize:false canvas) `Other in 
       let image = I.blend self#canvas#get (I.const Color.white) in
       ignore (Vgr.render vgr (`Image (size, self#view, image)));
@@ -92,12 +95,19 @@ class arena (canvas: Html.canvasElement Js.t) =
          self#move (float_of_int (x0-x), float_of_int (y0-y)); mode <- Some dpointer;
          Js._false
       | _ -> Js._true
+
+    val mutable dsize = (0,0)
+    method private checksize _ =
+      let s = canvasdiv##.clientWidth, canvasdiv##.clientHeight in
+      if s <> dsize then (dsize <- s; self#refresh);
+      Js._true      
     
     initializer
       canvas##.onwheel := Html.handler self#scroll;
       add_listener canvas Html.Event.mousedown self#mousedown;
       add_listener canvas Html.Event.mousemove self#mousemove;
       add_listener canvas Html.Event.mouseup self#mouseup;
+      add_listener canvasdiv Html.Event.mousemove self#checksize;
       ()
 
   end
@@ -121,37 +131,38 @@ let std_evt f ev =
   else Js._true
 
 let onload _ =
-  let canvas = app (get "canvas") Html.createCanvas in
+  let canvasdiv = get "canvas" in
+  let canvas = app canvasdiv Html.createCanvas in
   let entry = app (get "entry") Html.createTextarea in
   let strokes = app (get "strokes") Html.createTextarea in
   strokes##.value := Js.string "type commands here";
   let infos = get "infos" in
   let warnings = get "warnings" in
-  let arena = new arena canvas in
+  let arena = new arena canvasdiv canvas in
   let self = new locate arena entry infos warnings in
-  (* let entryfocused = ref true in *)
-  let onkeypress ev =
-    (* strokes##.value := Js.string ""; *)
+  (* let entryfocused = ref false in *)
+  let onkeypress b ev =
+    (* if not b || not !entryfocused then *)
     (match Js.to_string (Js.Optdef.get ev##.key (fun _ -> assert false)) with
       | "Control" | "Alt" | "Shift" | "Meta" | "Tab" -> ()
       | s -> self#on_key_press s);
-    Js.bool (Js.to_string (Js.Optdef.get ev##.key (fun _ -> assert false)) = "Tab")
+    Js.bool (b || Js.to_string (Js.Optdef.get ev##.key (fun _ -> assert false)) = "Tab")
   in
   let onkeyup ev =
     ignore ev;
     self#on_entry_changed;
     Js._true
   in
-  
-  entry##.style##.width := Js.string "80%";
-  canvas##.style##.width := Js.string "80%";
+  entry##.style##.width := Js.string "50%";
   entry##.tabIndex := 1;
   strokes##.tabIndex := 2;
   warnings##.style##.cssText := Js.string "color:red";
   add_listener canvas Html.Event.mousedown (std_evt (fun _ -> self#on_button_press));
   add_listener canvas Html.Event.mousemove (std_evt (fun _ -> self#on_motion));
   add_listener canvas Html.Event.mouseup (std_evt (fun _ -> self#on_button_release));      
-  add_listener strokes Html.Event.keydown onkeypress;
+  add_listener canvas Html.Event.click (fun _ -> strokes##focus; Js._true);      
+  add_listener strokes Html.Event.keydown (onkeypress false);
+  (* add_listener Html.window Html.Event.keydown (onkeypress true); *)
   add_listener entry Html.Event.keyup onkeyup;
   (* add_listener entry Html.Event.focus (fun _ -> entryfocused := true; Js._true); *)
   (* add_listener entry Html.Event.blur (fun _ -> entryfocused := false; Js._true); *)
